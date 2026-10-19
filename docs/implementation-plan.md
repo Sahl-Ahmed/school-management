@@ -176,19 +176,69 @@ npm run build      # production build
   without which the build would succeed and the first production request would
   fail with ENOENT.
 
-## Phase 4 — Fees and receipts
+## Phase 4 — Fees and receipts ✅ done
 
-**Build**
-- Fee type and rate configuration; bulk monthly charge generation.
-- Payment posting with allocation across charges.
-- Printable cash receipt with a sequential number.
-- Student fee views.
+**Delivered**
+- Configurable fee types (monthly class fee, coaching, exam, one-off) with
+  per-class or school-wide rates per academic year.
+- One-click monthly billing for every actively enrolled student at their own
+  class rate, limitable to a single class, **safely repeatable**.
+- Exam-fee charging attached to an exam rather than a calendar month.
+- Payment entry: find the student, tick the charges to settle, record cash,
+  bKash, Nagad, Rocket, bank, cheque or other, with a reference field.
+- Monthly clearance status for the office and for the student, month by month.
+- Printable receipts — one A4 sheet carrying a guardian copy and an office
+  copy either side of a cut line.
+- Administrator-only payment reversal and charge waiving, both requiring a
+  reason and both audited.
 
-**Done when**
-- Generating monthly charges twice does not double-bill.
-- A receipt cannot be issued twice for one payment.
-- A reversal reopens the charges it had cleared.
-- The student portal and the office screen agree on what is outstanding.
+**How duplicates are prevented, which is the point of this phase**
+- **Duplicate charges:** a partial unique index over student, fee type,
+  academic year, period and exam. Re-running a month reports how many students
+  were skipped rather than failing, because re-running after admitting a late
+  student is normal office work.
+- **Duplicate payments:** the payment form generates the payment's uuid when it
+  renders. A second click carries the same id, the RPC finds the row already
+  exists and returns the ORIGINAL receipt instead of taking the money again.
+  A disabled-button guard would not survive a refresh; this does.
+- **Duplicate receipts:** `receipts.payment_id` is UNIQUE, so one payment can
+  never yield two receipt numbers however many times the route is called.
+
+**Permissions**
+- Office staff (`authority_staff`) may bill and record payments.
+- Only `authority_admin` may reverse a payment or waive a charge.
+- Students see only their own fees. **Teachers see no student's fees at all** —
+  they are absent from the visibility check, not merely unlinked in the UI.
+
+**Money is never deleted.** A payment is reversed, which re-opens the charges it
+had cleared; the row and its receipt stay, and a reprint of a reversed receipt
+is stamped "REVERSED … this payment has been cancelled" so it cannot be used as
+proof of payment.
+
+**Verified**
+- 42 local tests for fees and receipts (166 in total across the suite).
+- Hosted walkthrough: billed October tuition for 5 students, re-ran it and got
+  "No new charges. All 5 eligible students were already billed"; recorded a
+  ৳1,650 payment against three months with a DOUBLE CLICK and confirmed exactly
+  one payment, one receipt and three allocations in the database; downloaded
+  and read the receipt PDF; reversed the payment and watched all three charges
+  re-open and the cleared figure return to 0%; reprinted the receipt and
+  confirmed the reversal stamp; checked the student's own view shows the same
+  position with no download offered for the reversed receipt.
+
+**Known limitations**
+- Fee types and rates are configured by inserting rows; there is no screen for
+  creating a fee type or editing a rate yet. The seed provides four types and
+  tuition rates for every class.
+- A payment may be recorded with an unallocated balance, which is held as
+  credit but has no screen for applying it to a later charge.
+- Partial payment of a single charge works, but the amount must be typed; the
+  quick-select buttons settle whole charges only.
+- No collection report for a date range, and no daily cash-book summary.
+- The exam-fee action exists as an RPC with no screen, since exams arrive in
+  phase 5.
+- `set_charge_status` supports cancelling as well as waiving, but only waiving
+  is wired to a button.
 
 ## Phase 5 — Exams, marks, results
 

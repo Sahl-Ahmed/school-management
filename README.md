@@ -4,10 +4,11 @@ Three role-based portals — **Authority**, **Teacher** and **Student** — over
 connected database, for a school in Bangladesh. Times display in `Asia/Dhaka`;
 amounts are in BDT.
 
-> **Status: phases 1, 2 and 3 of 9 complete.** The data model, permissions,
+> **Status: phases 1 to 4 of 9 complete.** The data model, permissions,
 > accounts, admission, photo compression, OTP activation, the class routine
-> with A4 PDFs, and teacher-submitted attendance with student, class and
-> dashboard views are built and verified against a hosted Supabase project. Greyed-out items in
+> with A4 PDFs, teacher-submitted attendance with student, class and dashboard
+> views, and fee billing, payment entry and printable receipts are built and
+> verified against a hosted Supabase project. Greyed-out items in
 > the portal navigation are not built yet — they are labelled with the phase
 > that delivers them rather than linked to a page that 404s.
 >
@@ -71,7 +72,7 @@ dispatch and device ingest.
 | `npm run dev` | Development server |
 | `npm run build` | Production build (no credentials needed) |
 | `npm run verify` | Typecheck + lint + schema/seed check + tests |
-| `npm test` | 121 local tests (offline — never touches the network) |
+| `npm test` | 166 local tests (offline — never touches the network) |
 | `npm run test:remote` | Access, Storage and OTP tests against the hosted project |
 | `npm run test:remote:cleanup` | Removes the accounts the remote tests create |
 | `npm run check:env` | Validates .env.local by shape without printing any value |

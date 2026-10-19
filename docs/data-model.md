@@ -36,6 +36,7 @@ comments.
 | `0026_range_constructor_grants` | restores EXECUTE on `timerange` for routine constraints |
 | `0027_fix_null_visibility_guard` | `owns_student_record` returns false not NULL; guard fails closed |
 | `0028_unsubmitted_from_routine` | outstanding lessons derived from the routine, not from session rows |
+| `0029_fee_rpcs` | atomic billing, payment recording, reversal, waiving, and fee summaries |
 
 ## Identity
 

@@ -10,7 +10,7 @@ export const AUTHORITY_NAV: NavItem[] = [
   { label: "Students", href: "/authority/students" },
   { label: "Teachers", href: "/authority/teachers" },
   { label: "Routine", href: "/authority/routine" },
-  { label: "Fees", note: "phase 4" },
+  { label: "Fees", href: "/authority/fees" },
   { label: "Exams", note: "phase 5" },
   { label: "Documents", note: "phase 6" },
   { label: "Notifications", note: "phase 7" },
