@@ -448,24 +448,131 @@ describe.skipIf(!status.ready)("hosted Supabase project", () => {
 
   // -------------------------------------------------------------------------
   describe("audit on the live project", () => {
+    /**
+     * Returns the current highest audit_logs id, for use as a watermark.
+     *
+     * Rows are selected with `id > watermark` rather than
+     * `occurred_at >= <client timestamp>`, because the two clocks are not the
+     * same clock. On the machine this was written, the local clock ran about
+     * 24 seconds ahead of the database, so a timestamp filter silently
+     * excluded the row the test had just caused to be written. audit_logs.id
+     * is a bigint identity, so it is monotonic and entirely server-side.
+     */
+    async function auditWatermark(): Promise<number> {
+      const { data } = await admin
+        .from("audit_logs")
+        .select("id")
+        .order("id", { ascending: false })
+        .limit(1);
+
+      return data?.[0]?.id ?? 0;
+    }
+
     it("records an authority change with the acting user", async () => {
       const client = await signedInAs(accounts.authority!);
 
-      await client
+      // The trigger deliberately skips an UPDATE that changes nothing, so the
+      // new value must differ from the current one. Hard-coding a value made
+      // this test pass on a fresh project and fail on the second run.
+      const { data: before } = await admin
         .from("students")
-        .update({ blood_group: "O-" })
-        .eq("id", SEED.studentBeta);
+        .select("blood_group")
+        .eq("id", SEED.studentBeta)
+        .single();
 
+      const next = before!.blood_group === "O-" ? "B-" : "O-";
+      const watermark = await auditWatermark();
+
+      const { error } = await client
+        .from("students")
+        .update({ blood_group: next })
+        .eq("id", SEED.studentBeta);
+      expect(error).toBeNull();
+
+      // Scoped to this run, so a row left by an earlier run cannot satisfy it.
       const { data } = await admin
         .from("audit_logs")
-        .select("actor_id, actor_role, action, changed_fields")
+        .select("actor_id, actor_role, actor_name, action, changed_fields")
         .eq("table_name", "students")
         .eq("record_id", SEED.studentBeta)
-        .order("occurred_at", { ascending: false })
+        .gt("id", watermark)
+        .order("id", { ascending: false })
         .limit(1);
 
       expect(data?.[0]?.actor_id).toBe(accounts.authority!.userId);
       expect(data?.[0]?.actor_role).toBe("authority_admin");
+      expect(data?.[0]?.changed_fields).toContain("blood_group");
+    });
+
+    it("an UPDATE that changes nothing writes no audit row", async () => {
+      const client = await signedInAs(accounts.authority!);
+
+      const { data: current } = await admin
+        .from("students")
+        .select("blood_group")
+        .eq("id", SEED.studentBeta)
+        .single();
+
+      const watermark = await auditWatermark();
+
+      // Same value back again.
+      await client
+        .from("students")
+        .update({ blood_group: current!.blood_group })
+        .eq("id", SEED.studentBeta);
+
+      const { data } = await admin
+        .from("audit_logs")
+        .select("id")
+        .eq("table_name", "students")
+        .eq("record_id", SEED.studentBeta)
+        .gt("id", watermark);
+
+      expect(data ?? []).toHaveLength(0);
+    });
+
+    it("attribution survives deletion of the acting account", async () => {
+      // The reason actor_id carries no foreign key. A deleted account must not
+      // erase who made a change.
+      const throwaway = await provision(
+        `transient.${TEST_TAG}@school.invalid`,
+        "authority_admin",
+        "Transient Authority",
+      );
+
+      const client = await signedInAs(throwaway);
+      const watermark = await auditWatermark();
+
+      await client
+        .from("students")
+        .update({ full_name_bn: `যাচাই ${Date.now()}` })
+        .eq("id", SEED.studentBeta);
+
+      const { data: logged } = await admin
+        .from("audit_logs")
+        .select("id, actor_id, actor_name")
+        .eq("table_name", "students")
+        .eq("record_id", SEED.studentBeta)
+        .gt("id", watermark)
+        .order("id", { ascending: false })
+        .limit(1);
+
+      expect(logged?.[0]?.actor_id).toBe(throwaway.userId);
+      expect(logged?.[0]?.actor_name).toBe("Transient Authority");
+
+      // Now remove the account entirely, as cleanup would.
+      await admin.from("profiles").delete().eq("id", throwaway.userId);
+      await admin.auth.admin.deleteUser(throwaway.userId);
+
+      const { data: after } = await admin
+        .from("audit_logs")
+        .select("actor_id, actor_name, actor_role")
+        .eq("id", logged![0]!.id)
+        .single();
+
+      expect(after!.actor_id).toBe(throwaway.userId);
+      expect(after!.actor_name).toBe("Transient Authority");
+      expect(after!.actor_role).toBe("authority_admin");
     });
   });
 });

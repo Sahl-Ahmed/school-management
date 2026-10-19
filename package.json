@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run tests/access-rules.test.mjs tests/phone.test.ts",
     "test:watch": "vitest",
     "verify:migrations": "node scripts/verify-migrations.mjs",
     "verify:seed": "node scripts/verify-seed.mjs",
@@ -25,7 +25,9 @@
     "test:local": "vitest run tests/access-rules.test.mjs tests/phone.test.ts",
     "test:remote": "vitest run tests/remote-access.test.ts",
     "test:remote:cleanup": "node scripts/remote-cleanup.mjs",
-    "check:env": "node scripts/check-env.mjs"
+    "check:env": "node scripts/check-env.mjs",
+    "report:remote-schema": "node scripts/remote-schema-report.mjs",
+    "test:all": "vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

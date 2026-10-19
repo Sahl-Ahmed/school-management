@@ -669,7 +669,7 @@ describe("audit trail", () => {
     });
 
     const log = await db.query(
-      `select actor_id, actor_role, action, changed_fields
+      `select actor_id, actor_role, actor_name, action, changed_fields
          from public.audit_logs
         where table_name = 'students' and record_id = $1
         order by occurred_at desc limit 1`,
@@ -678,6 +678,8 @@ describe("audit trail", () => {
 
     expect(log.rows[0].actor_id).toBe(ids.userAuthority);
     expect(log.rows[0].actor_role).toBe("authority_admin");
+    // Snapshotted, so attribution outlives the account (migration 0021).
+    expect(log.rows[0].actor_name).toBe("Demo Authority Admin");
     expect(log.rows[0].action).toBe("update");
     expect(log.rows[0].changed_fields).toContain("blood_group");
   });
