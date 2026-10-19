@@ -119,8 +119,16 @@ distinguishing error message would turn the login form into a lookup service.
 This is the only surface anonymous visitors reach, and it is deliberately
 narrow:
 
-- `anon` holds **no table privileges at all** (migration 0019). The only thing
-  it may call is `public.get_public_card(token)`.
+- `anon` holds **no table privileges at all** (migration 0019) and `EXECUTE` on
+  exactly one function (migration 0020). The only thing it may call is
+  `public.get_public_card(token)`.
+
+  Migration 0020 exists because the first attempt was wrong in a way worth
+  remembering: Supabase's default privileges grant `EXECUTE` on each new
+  function in `public` to `anon` **explicitly**, so `revoke ... from public`
+  removes only the `PUBLIC` pseudo-role grant and leaves `anon` holding the
+  function. Revoking must name `anon`. `npm run report:remote-schema` checks
+  this against the deployed project, which is how it was caught.
 - That function returns `qr_tokens.card_snapshot` — a frozen copy of the fields
   printed on the physical card — plus school branding. It joins to no student,
   contact, fee, mark or attendance table, so a future policy mistake on those
@@ -211,7 +219,7 @@ overlapping grade bands within one scale.
 
 ## Audit
 
-A generic trigger (`app.audit_row_change`) is attached to 40 tables covering
+A generic trigger (`app.audit_row_change`) is attached to 41 tables covering
 fees, marks, attendance, enrollment, permissions and document eligibility. It
 is a database trigger rather than application code precisely so that no code
 path — including a manual change in the Supabase SQL editor — can skip it. It
@@ -220,6 +228,15 @@ records only genuinely changed columns, and skips hashed secrets.
 `feedback_responses` and `feedback_comments` are deliberately **not** audited:
 an audit row carrying `auth.uid()` next to an anonymous rating would defeat the
 anonymity the model exists to provide.
+
+`audit_logs.actor_id` carries **no foreign key**, and the trigger snapshots
+`actor_name` and `actor_role` at write time (migration 0021). The original
+`references profiles (id) on delete set null` meant deleting an account nulled
+the actor on every row it had ever produced, so removing an account was a way
+to launder it. An audit row is now self-contained. Accounts should still be
+deactivated (`profiles.is_active = false`) rather than deleted, because
+operational pointers like `created_by` and `marked_by` do keep
+`on delete set null`.
 
 ## Time and money
 

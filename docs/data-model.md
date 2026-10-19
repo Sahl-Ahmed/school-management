@@ -21,12 +21,14 @@ comments.
 | `0011_documents_and_qr` | templates, QR tokens, admit-card rules and overrides, generated documents |
 | `0012_library` | library books |
 | `0013_notifications` | notification jobs, SMS delivery logs, OTP challenges, auth attempts |
-| `0014_audit` | audit log and the generic trigger, attached to 40 tables |
+| `0014_audit` | audit log and the generic trigger, attached to 41 tables |
 | `0015_auth_helpers` | the `app.*` authorisation functions, `get_public_card`, `admit_card_eligibility` |
 | `0016_rls_policies` | RLS enabled on every table; 131 policies |
 | `0017_feedback_rpc` | `submit_feedback`, `feedback_analysis` |
 | `0018_storage_buckets` | three buckets and their object policies |
-| `0019_grants` | explicit privileges; `anon` gets none |
+| `0019_grants` | explicit table privileges; `anon` gets none |
+| `0020_function_grants` | explicit function privileges; `anon` reaches one function |
+| `0021_audit_actor_durability` | audit attribution survives account deletion |
 
 ## Identity
 

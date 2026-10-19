@@ -122,14 +122,51 @@ for (const g of anonGrants.slice(0, 20)) {
 }
 
 // Functions anon may execute. Expect exactly get_public_card.
+//
+// The timerange/timemultirange constructors that CREATE TYPE ... AS RANGE
+// generates are excluded: they build a range value from two `time` inputs,
+// touch no data, and cannot be revoked without dropping the type. Counting
+// them as findings would bury the one row that matters.
 const anonFns = await query(`
-  select p.proname
+  select n.nspname || '.' || p.proname as fn
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('public', 'app')
+    and p.prokind = 'f'
+    and p.proname not in ('timerange', 'timemultirange')
     and has_function_privilege('anon', p.oid, 'EXECUTE')
-  order by p.proname
+  order by 1
 `);
 
-console.log(`\n  Functions anon may execute: ${anonFns.length}`);
-for (const f of anonFns) console.log(`    - ${f.proname}`);
+const EXPECTED_ANON = ["public.get_public_card"];
+const unexpected = anonFns.filter((f) => !EXPECTED_ANON.includes(f.fn));
+
+console.log(
+  `\n  Functions anon may execute: ${anonFns.length}` +
+    (unexpected.length ? "  <-- PROBLEM" : "  (correct)"),
+);
+for (const f of anonFns) {
+  console.log(`    - ${f.fn}${unexpected.includes(f) ? "   UNEXPECTED" : ""}`);
+}
+
+// Trigger and internal functions must be callable by no interactive role.
+const internalExposed = await query(`
+  select n.nspname || '.' || p.proname as fn
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'app'
+    and p.prokind = 'f'
+    and (p.proname like 'enforce%' or p.proname like '%sync%'
+         or p.proname in ('audit_row_change', 'audit_skip_columns',
+                          'touch_updated_at', 'recalc_fee_charge'))
+    and (has_function_privilege('anon', p.oid, 'EXECUTE')
+         or has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+  order by 1
+`);
+
+console.log(
+  "\n  Trigger/internal functions reachable by anon or authenticated: " +
+    `${internalExposed.length}` +
+    (internalExposed.length ? "  <-- PROBLEM" : "  (correct)"),
+);
+for (const f of internalExposed) console.log(`    - ${f.fn}`);
