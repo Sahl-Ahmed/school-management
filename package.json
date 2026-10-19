@@ -24,7 +24,8 @@
     "db:types": "supabase gen types typescript --linked > src/lib/supabase/database.types.ts",
     "test:local": "vitest run tests/access-rules.test.mjs tests/phone.test.ts",
     "test:remote": "vitest run tests/remote-access.test.ts",
-    "test:remote:cleanup": "node scripts/remote-cleanup.mjs"
+    "test:remote:cleanup": "node scripts/remote-cleanup.mjs",
+    "check:env": "node scripts/check-env.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

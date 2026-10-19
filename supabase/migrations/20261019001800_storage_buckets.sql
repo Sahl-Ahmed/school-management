@@ -29,8 +29,11 @@ on conflict (id) do update
       file_size_limit    = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
-comment on column storage.buckets.file_size_limit is
-  'Bytes. student-photos is capped at 204800 (200 KB) to match the brief.';
+-- NOTE: no COMMENT ON is set against storage.buckets or storage.objects. On a
+-- hosted Supabase project those relations are owned by the platform, and
+-- `comment on column storage.buckets...` fails with
+-- "must be owner of relation buckets (SQLSTATE 42501)". The 204800-byte limit
+-- on student-photos above is the 200 KB ceiling the brief requires.
 
 -- --------------------------------------------------------------------------
 -- branding — world-readable, authority-writable

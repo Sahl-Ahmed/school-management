@@ -23,7 +23,10 @@ const admin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } },
 );
 
-const REMOVABLE = /@(students|teachers)\.school\.invalid$|^authority\.phase1-verification@school\.invalid$/;
+// Synthetic student/teacher identities, plus any verification account named
+// <something>.phase1-verification@school.invalid. Nothing else is ever matched,
+// so a real authority account created by hand is never touched.
+const REMOVABLE = /@(students|teachers)\.school\.invalid$|^[a-z0-9-]+\.phase1-verification@school\.invalid$/;
 
 const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
 if (error) {
