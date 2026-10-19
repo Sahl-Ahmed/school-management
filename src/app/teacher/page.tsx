@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PortalShell, type NavItem } from "@/components/portal-shell";
+import { PortalShell } from "@/components/portal-shell";
+import { TEACHER_NAV } from "./nav";
 import { one } from "@/lib/supabase/relations";
 
 export const metadata: Metadata = { title: "Teacher" };
@@ -12,15 +13,6 @@ export const metadata: Metadata = { title: "Teacher" };
  */
 export const dynamic = "force-dynamic";
 
-
-const NAV: NavItem[] = [
-  { label: "Today", href: "/teacher" },
-  { label: "Attendance", note: "phase 3" },
-  { label: "Marks", note: "phase 5" },
-  { label: "Class tests", note: "phase 5" },
-  { label: "Library", note: "phase 7" },
-  { label: "My attendance & leave", note: "phase 8" },
-];
 
 export default async function TeacherHome() {
   const supabase = await createClient();
@@ -47,7 +39,7 @@ export default async function TeacherHome() {
     <PortalShell
       portalName="Teacher portal"
       userName={profile?.full_name ?? "Teacher"}
-      nav={NAV}
+      nav={TEACHER_NAV}
     >
       <div className="space-y-6">
         <section>
@@ -62,7 +54,7 @@ export default async function TeacherHome() {
 
         <section
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <h2 className="text-sm font-semibold">My assignments</h2>
           <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -75,7 +67,7 @@ export default async function TeacherHome() {
               routine.
             </p>
           ) : (
-            <ul className="mt-3 divide-y" style={{ borderColor: "var(--border-subtle)" }}>
+            <ul className="mt-3 divide-y" style={{ borderColor: "var(--line-hairline)" }}>
               {assignments.data!.map((a) => {
                 const cls = one<{ name: string }>(a.classes);
                 const sec = one<{ name: string }>(a.sections);
@@ -100,7 +92,7 @@ export default async function TeacherHome() {
 
         <section
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <h2 className="text-sm font-semibold">Not built yet</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PortalShell, type NavItem } from "@/components/portal-shell";
+import { PortalShell } from "@/components/portal-shell";
+import { STUDENT_NAV } from "./nav";
 import { one } from "@/lib/supabase/relations";
 
 export const metadata: Metadata = { title: "Student" };
@@ -12,16 +13,6 @@ export const metadata: Metadata = { title: "Student" };
  */
 export const dynamic = "force-dynamic";
 
-
-const NAV: NavItem[] = [
-  { label: "My profile", href: "/student" },
-  { label: "Attendance", note: "phase 3" },
-  { label: "Fees", note: "phase 4" },
-  { label: "Results", note: "phase 5" },
-  { label: "Teacher feedback", note: "phase 6" },
-  { label: "Library", note: "phase 7" },
-  { label: "ID & admit card", note: "phase 6" },
-];
 
 export default async function StudentHome() {
   const supabase = await createClient();
@@ -66,12 +57,12 @@ export default async function StudentHome() {
     <PortalShell
       portalName="Student portal"
       userName={profile?.full_name ?? "Student"}
-      nav={NAV}
+      nav={STUDENT_NAV}
     >
       <div className="space-y-6">
         <section
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <h1 className="text-xl font-semibold tracking-tight">
             {student.data?.full_name ?? profile?.full_name}
@@ -89,7 +80,7 @@ export default async function StudentHome() {
         <section className="grid gap-4 sm:grid-cols-2">
           <div
             className="rounded-xl border p-4"
-            style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+            style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
           >
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Outstanding fees
@@ -104,7 +95,7 @@ export default async function StudentHome() {
 
           <div
             className="rounded-xl border p-4"
-            style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+            style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
           >
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               Attendance
@@ -119,7 +110,7 @@ export default async function StudentHome() {
 
         <section
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <h2 className="text-sm font-semibold">Not built yet</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>

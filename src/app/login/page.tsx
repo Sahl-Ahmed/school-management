@@ -25,9 +25,9 @@ export default async function LoginPage({
             role="alert"
             className="mb-4 rounded-lg border px-3 py-2 text-sm"
             style={{
-              borderColor: "oklch(0.8 0.12 25)",
-              background: "oklch(0.97 0.03 25)",
-              color: "oklch(0.4 0.14 25)",
+              borderColor: "var(--state-bad)",
+              background: "var(--state-bad-soft)",
+              color: "var(--state-bad)",
             }}
           >
             This account is not active. Please contact the school office.

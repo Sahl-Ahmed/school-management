@@ -25,13 +25,13 @@ export function LoginTabs() {
   return (
     <div
       className="overflow-hidden rounded-xl border shadow-sm"
-      style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+      style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
     >
       <div
         role="tablist"
         aria-label="Choose your portal"
         className="grid grid-cols-3 border-b"
-        style={{ borderColor: "var(--border-subtle)" }}
+        style={{ borderColor: "var(--line-hairline)" }}
       >
         {TABS.map((tab) => (
           <button
@@ -44,12 +44,12 @@ export function LoginTabs() {
             onClick={() => setActive(tab.id)}
             className="px-3 py-3 text-sm font-medium transition-colors"
             style={{
-              color: active === tab.id ? "var(--color-brand-700)" : "var(--text-muted)",
+              color: active === tab.id ? "var(--accent-hover)" : "var(--text-muted)",
               background:
-                active === tab.id ? "var(--color-brand-50)" : "transparent",
+                active === tab.id ? "var(--surface-accent)" : "transparent",
               boxShadow:
                 active === tab.id
-                  ? "inset 0 -2px 0 0 var(--color-brand-600)"
+                  ? "inset 0 -2px 0 0 var(--accent)"
                   : undefined,
             }}
           >
@@ -191,7 +191,7 @@ function Field({
         className="w-full rounded-lg border px-3 py-2 text-sm outline-none
                    focus-visible:ring-2 focus-visible:ring-offset-1"
         style={{
-          borderColor: "var(--border-subtle)",
+          borderColor: "var(--line-hairline)",
           background: "var(--surface)",
           color: "var(--text-primary)",
         }}
@@ -213,7 +213,7 @@ function FormError({ error }: { error?: string }) {
     <p
       role="alert"
       className="rounded-lg px-3 py-2 text-sm"
-      style={{ background: "oklch(0.96 0.03 25)", color: "oklch(0.42 0.15 25)" }}
+      style={{ background: "var(--state-bad-soft)", color: "var(--state-bad)" }}
     >
       {error}
     </p>
@@ -227,7 +227,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
       disabled={pending}
       className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white
                  transition-opacity disabled:opacity-60"
-      style={{ background: "var(--color-brand-600)" }}
+      style={{ background: "var(--accent)" }}
     >
       {pending ? "Signing in…" : "Sign in"}
     </button>

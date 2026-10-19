@@ -49,7 +49,7 @@ export function Field({
         className="w-full rounded-lg border px-3 py-2 text-sm outline-none
                    focus-visible:ring-2 focus-visible:ring-offset-1"
         style={{
-          borderColor: fieldError ? "oklch(0.6 0.19 25)" : "var(--border-subtle)",
+          borderColor: fieldError ? "var(--state-bad)" : "var(--line-hairline)",
           background: "var(--surface)",
           color: "var(--text-primary)",
         }}
@@ -61,7 +61,7 @@ export function Field({
         </p>
       )}
       {fieldError && (
-        <p id={errorId} className="mt-1 text-xs" style={{ color: "oklch(0.5 0.19 25)" }}>
+        <p id={errorId} className="mt-1 text-xs" style={{ color: "var(--state-bad)" }}>
           {fieldError}
         </p>
       )}
@@ -105,7 +105,7 @@ export function SelectField({
         className="w-full rounded-lg border px-3 py-2 text-sm outline-none
                    focus-visible:ring-2 focus-visible:ring-offset-1"
         style={{
-          borderColor: fieldError ? "oklch(0.6 0.19 25)" : "var(--border-subtle)",
+          borderColor: fieldError ? "var(--state-bad)" : "var(--line-hairline)",
           background: "var(--surface)",
           color: "var(--text-primary)",
         }}
@@ -119,7 +119,7 @@ export function SelectField({
         </p>
       )}
       {fieldError && (
-        <p id={errorId} className="mt-1 text-xs" style={{ color: "oklch(0.5 0.19 25)" }}>
+        <p id={errorId} className="mt-1 text-xs" style={{ color: "var(--state-bad)" }}>
           {fieldError}
         </p>
       )}
@@ -135,10 +135,10 @@ export function Banner({
   children: React.ReactNode;
 }) {
   const palette = {
-    error: { bg: "oklch(0.96 0.03 25)", fg: "oklch(0.42 0.15 25)" },
-    success: { bg: "oklch(0.95 0.05 150)", fg: "oklch(0.38 0.11 150)" },
-    warning: { bg: "oklch(0.96 0.06 85)", fg: "oklch(0.4 0.1 75)" },
-    info: { bg: "var(--color-brand-50)", fg: "var(--color-brand-900)" },
+    error: { bg: "var(--state-bad-soft)", fg: "var(--state-bad)" },
+    success: { bg: "var(--state-good-soft)", fg: "var(--state-good)" },
+    warning: { bg: "var(--state-warn-soft)", fg: "var(--state-warn)" },
+    info: { bg: "var(--surface-accent)", fg: "var(--text-primary)" },
   }[tone];
 
   return (
@@ -169,7 +169,7 @@ export function SubmitButton({
       disabled={pending}
       className="rounded-lg px-4 py-2.5 text-sm font-medium text-white
                  transition-opacity disabled:opacity-60"
-      style={{ background: "var(--color-brand-600)" }}
+      style={{ background: "var(--accent)" }}
     >
       {pending ? pendingLabel : children}
     </button>
@@ -188,7 +188,7 @@ export function Fieldset({
   return (
     <fieldset
       className="rounded-xl border p-5"
-      style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+      style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
     >
       <legend className="px-2 text-sm font-semibold">{legend}</legend>
       {description && (

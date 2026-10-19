@@ -29,6 +29,8 @@ export const ids = {
 
   // Teacher One: Bangla, Class 3 only.
   teacherOne: "7eac0000-0000-4000-8000-000000000001",
+  // Teacher Two: Mathematics, Class 3.
+  teacherTwo: "7eac0000-0000-4000-8000-000000000002",
   // Teacher Three: English, Class 8 only.
   teacherThree: "7eac0000-0000-4000-8000-000000000003",
 
@@ -41,6 +43,7 @@ export const ids = {
   userAuthority: "0a000000-0000-4000-8000-000000000001",
   userOfficeStaff: "0a000000-0000-4000-8000-000000000002",
   userTeacherOne: "0b000000-0000-4000-8000-000000000001",
+  userTeacherTwo: "0b000000-0000-4000-8000-000000000002",
   userTeacherThree: "0b000000-0000-4000-8000-000000000003",
   userStudentAlpha: "0c000000-0000-4000-8000-000000000001",
   userSiblingElder: "0c000000-0000-4000-8000-000000000003",
@@ -56,6 +59,7 @@ export async function seedWithAccounts(db) {
       ('${ids.userAuthority}',      'authority@school.example'),
       ('${ids.userOfficeStaff}',    'office@school.example'),
       ('${ids.userTeacherOne}',     't001@teachers.school.invalid'),
+      ('${ids.userTeacherTwo}',     't002@teachers.school.invalid'),
       ('${ids.userTeacherThree}',   't003@teachers.school.invalid'),
       ('${ids.userStudentAlpha}',   's0001@students.school.invalid'),
       ('${ids.userSiblingElder}',   's0003@students.school.invalid'),
@@ -65,6 +69,7 @@ export async function seedWithAccounts(db) {
       ('${ids.userAuthority}',      'authority_admin', 'Demo Authority Admin', false, now()),
       ('${ids.userOfficeStaff}',    'authority_staff', 'Demo Office Staff',    false, now()),
       ('${ids.userTeacherOne}',     'teacher',         'Demo Teacher One',     false, now()),
+      ('${ids.userTeacherTwo}',     'teacher',         'Demo Teacher Two',     false, now()),
       ('${ids.userTeacherThree}',   'teacher',         'Demo Teacher Three',   false, now()),
       ('${ids.userStudentAlpha}',   'student',         'Demo Student Alpha',   false, now()),
       ('${ids.userSiblingElder}',   'student',         'Demo Sibling Elder',   false, now()),
@@ -72,6 +77,8 @@ export async function seedWithAccounts(db) {
 
     update public.teachers set auth_user_id = '${ids.userTeacherOne}'
       where id = '${ids.teacherOne}';
+    update public.teachers set auth_user_id = '${ids.userTeacherTwo}'
+      where id = '${ids.teacherTwo}';
     update public.teachers set auth_user_id = '${ids.userTeacherThree}'
       where id = '${ids.teacherThree}';
 

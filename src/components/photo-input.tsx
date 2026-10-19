@@ -105,7 +105,7 @@ export function PhotoInput({
             src={status.previewUrl}
             alt="Preview of the selected student photo"
             className="h-28 w-24 shrink-0 rounded-lg border object-cover"
-            style={{ borderColor: "var(--border-subtle)" }}
+            style={{ borderColor: "var(--line-hairline)" }}
           />
         )}
 
@@ -135,7 +135,7 @@ export function PhotoInput({
             )}
 
             {status.state === "ready" && (
-              <span style={{ color: "oklch(0.42 0.1 150)" }}>
+              <span style={{ color: "var(--state-good)" }}>
                 Ready: {formatBytes(status.bytes)} ({status.width}×{status.height})
                 {status.originalBytes > status.bytes && (
                   <> — reduced from {formatBytes(status.originalBytes)}</>
@@ -144,14 +144,14 @@ export function PhotoInput({
             )}
 
             {status.state === "error" && (
-              <span role="alert" style={{ color: "oklch(0.5 0.19 25)" }}>
+              <span role="alert" style={{ color: "var(--state-bad)" }}>
                 {status.message}
               </span>
             )}
           </div>
 
           {serverError && status.state !== "error" && (
-            <p className="mt-1 text-xs" role="alert" style={{ color: "oklch(0.5 0.19 25)" }}>
+            <p className="mt-1 text-xs" role="alert" style={{ color: "var(--state-bad)" }}>
               {serverError}
             </p>
           )}

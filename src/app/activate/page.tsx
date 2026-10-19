@@ -29,7 +29,7 @@ export default async function ActivatePage() {
 
         <div
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <ActivationFlow purpose="activation" />
         </div>
@@ -39,7 +39,7 @@ export default async function ActivatePage() {
             <button
               type="submit"
               className="w-full rounded-lg border px-4 py-2 text-sm font-medium"
-              style={{ borderColor: "var(--border-subtle)" }}
+              style={{ borderColor: "var(--line-hairline)" }}
             >
               Sign out
             </button>

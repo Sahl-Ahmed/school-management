@@ -49,7 +49,7 @@ export function ActivationFlow({
         <Link
           href="/login"
           className="inline-block rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-          style={{ background: "var(--color-brand-600)" }}
+          style={{ background: "var(--accent)" }}
         >
           Go to sign in
         </Link>
