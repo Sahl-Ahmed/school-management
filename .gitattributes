@@ -1,0 +1,19 @@
+# Normalise line endings so a Windows checkout and a Linux CI runner produce
+# identical diffs. Without this, every file touched on Windows shows as fully
+# rewritten.
+* text=auto eol=lf
+
+# SQL migrations are applied verbatim by `supabase db push`; keep them LF.
+*.sql text eol=lf
+
+# Lockfiles and generated types should never be hand-merged.
+package-lock.json -diff linguist-generated
+src/lib/supabase/database.types.ts -diff linguist-generated
+
+# Binary assets.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+*.woff2 binary

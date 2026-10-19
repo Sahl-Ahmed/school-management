@@ -1,0 +1,46 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts.timestamp
+
+# production
+/build
+
+# testing
+/coverage
+
+# env / secrets  — never commit real credentials
+.env
+.env.local
+.env.*.local
+*.pem
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# typescript
+*.tsbuildinfo
+
+# generated artifacts
+/tmp/
+/generated-pdfs/
