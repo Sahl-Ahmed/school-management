@@ -43,7 +43,14 @@ export const teacherAssignmentSchema = z.object({
   section_id: z.uuid(),
   subject_id: z.uuid(),
   academic_year_id: z.uuid(),
-  effective_from: z.string().optional().default(""),
+  // An absent effective date means "from today". It must arrive as null, not
+  // as an empty string: `.default("")` would send "" to the database, where
+  // ''::date raises before coalesce can supply a fallback. Migration 0024
+  // hardens the function against this too, but the schema should not emit it.
+  effective_from: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v : null)),
 });
 
 export const teacherCreateSchema = z.object({

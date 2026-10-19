@@ -4,13 +4,15 @@ Three role-based portals — **Authority**, **Teacher** and **Student** — over
 connected database, for a school in Bangladesh. Times display in `Asia/Dhaka`;
 amounts are in BDT.
 
-> **Status: phase 1 of 9 complete.** The data model, permissions, accounts and
-> portal shell are built and tested. Feature screens are not. Greyed-out items
-> in the portal navigation are not built yet — they are labelled with the phase
+> **Status: phases 1 and 2 of 9 complete.** The data model, permissions,
+> accounts, student and teacher admission, photo compression and OTP activation
+> are built and verified against a hosted Supabase project. Greyed-out items in
+> the portal navigation are not built yet — they are labelled with the phase
 > that delivers them rather than linked to a page that 404s.
 >
-> SMS is in simulate mode (nothing is sent). The K40 fingerprint terminal has
-> no bridge yet and is untested against hardware.
+> **SMS is a development simulation.** No provider is connected, so no message
+> reaches a phone; codes are written to the delivery log only. The K40
+> fingerprint terminal has no bridge yet and is untested against hardware.
 
 ## Quick start
 
@@ -37,6 +39,7 @@ npm run dev
 | [docs/data-model.md](docs/data-model.md) | All 60 tables, the decisions worth questioning, known gaps |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | The nine phases and what "done" means for each |
 | [docs/decisions-for-owner.md](docs/decisions-for-owner.md) | Eight open policy decisions, with current defaults |
+| [docs/design-system.md](docs/design-system.md) | Palette, chart rules, and the revised Library card specification |
 
 ## How it is built
 
@@ -64,7 +67,11 @@ dispatch and device ingest.
 | `npm run dev` | Development server |
 | `npm run build` | Production build (no credentials needed) |
 | `npm run verify` | Typecheck + lint + schema/seed check + tests |
-| `npm test` | 49 tests |
+| `npm test` | Local tests (offline — never touches the network) |
+| `npm run test:remote` | Access, Storage and OTP tests against the hosted project |
+| `npm run test:remote:cleanup` | Removes the accounts the remote tests create |
+| `npm run check:env` | Validates .env.local by shape without printing any value |
+| `npm run report:remote-schema` | Read-only privilege and RLS audit of the live project |
 | `npm run verify:migrations` | Apply all migrations to a throwaway Postgres |
 | `npm run verify:seed` | Migrations + seed, with a row census |
 | `npm run db:push` | Push migrations to the linked Supabase project |
@@ -80,6 +87,10 @@ src/
   lib/
     supabase/           the three clients + relation helper
     auth/identity.ts    registration number → Auth identity mapping
+    auth/otp.ts         hashed one-time codes, expiry, rate limits
+    sms/                provider adapter (simulate / live) + segment counting
+    image/compress.ts   in-browser photo compression under 200 KB
+    validation/         zod schemas shared by forms and server actions
     env.ts              validated environment
     phone.ts            Bangladeshi number normalisation
   proxy.ts              session refresh, role routing, activation gate
@@ -89,8 +100,11 @@ supabase/
   seed.sql              synthetic demo data
 
 tests/
-  access-rules.test.mjs cross-role access and idempotency (39 tests)
-  phone.test.ts         phone normalisation (10 tests)
+  access-rules.test.mjs cross-role access and idempotency
+  admission.test.mjs    admission RPC permissions, atomicity, siblings
+  phone.test.ts         phone normalisation
+  sms.test.ts           billable segment counting, including Bangla
+  remote-*.test.ts      against the hosted project; skip without credentials
   sql/                  PGlite harness, Supabase shim, fixtures
 
 docs/                   see the table above

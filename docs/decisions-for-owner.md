@@ -4,13 +4,18 @@ None of these block the next phase. Each is stored as configuration rather than
 hard-coded, so answering one later is a data change, not a code change. What is
 in place now is a documented default, not a guess presented as policy.
 
-Two already answered during setup:
+Three already answered:
 
 - **Supabase project** — owner creates it; migrations are written and verified,
   steps are in [`setup.md`](setup.md).
 - **Default UI language** — English first, with the text layer structured so
   Bangla can be added without rewriting components. Subject names already carry
   `name_bn`, and feedback questions carry `prompt_bn`.
+- **Visual design** — a polished light interface in white, green and black,
+  consistent across all three portals, with tasteful colour in charts and
+  meters. Recorded in full in [design-system.md](design-system.md), which also
+  carries the **revised Library card specification** that replaces the original
+  brief's PDF-thumbnail design.
 
 ---
 
@@ -146,5 +151,6 @@ Recorded here so they can be reversed deliberately rather than discovered.
 | Student photos | Private bucket, served by signed URL, not public. | Yes. |
 | QR branding | School name/email/phone read live, not frozen into the snapshot, so a corrected office number appears on already-issued cards. | Yes. |
 | Feedback retraction | Impossible by construction — the price of real anonymity. | No. Changing it means abandoning anonymity. |
+| Library covers | PDF-first-page thumbnails cancelled; coloured subject/audience cards instead. | Yes — but the old design should not be built. |
 | Audit of feedback answers | Not audited, for the same reason. | No. |
 | Admit card with no rule configured | Blocked, not allowed. | Yes, but defaulting to allow would be unsafe. |

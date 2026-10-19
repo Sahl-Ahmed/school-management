@@ -28,30 +28,62 @@ npm run verify     # typecheck, lint, migrations + seed, 49 tests
 npm run build      # production build
 ```
 
-## Phase 2 — Admission and activation
+## Phase 2 — Admission and activation ✅ done
 
-**Build**
-- Add Student: full form, with browser-side photo compression below 200 KB and
+**Delivered**
+- Add Student: full brief field set, with browser-side photo compression and
   server-side size validation.
-- Add Teacher, including the device user id field and the distinct-finger count.
-- Class and subject management; promotion between academic years.
-- OTP activation: issue, verify, set password, for both students and teachers.
-- Forgot-password over OTP.
-- Account provisioning via the Admin API with `must_set_password = true`.
+- Add Teacher, including class assignments and the fingerprint device-user-id
+  mapping with a distinct-finger count.
+- Students list with search by name or registration number, and pagination.
+- Teachers list showing assignment count, device mapping and an enrollment
+  warning below three distinct fingers.
+- Atomic admission RPCs (migration 0022) with auth-account compensation.
+- OTP activation and password recovery for both students and teachers:
+  hashed codes, expiry, per-challenge attempt limits, per-identifier rate
+  limits, and one shared implementation for both flows.
+- SMS adapter with `simulate` and `live` modes and correct Bangla segment
+  counting.
 
-**Done when**
-- A student created by the office can activate on a phone and sign in.
-- Both siblings activate independently on the same guardian number.
-- A photo over 200 KB is rejected server-side, not only in the browser.
-- OTP is rate-limited and codes are stored hashed.
-- Promotion preserves the previous year's enrollment row.
+**Verified**
+- 76 local tests, plus 15 Storage and 12 OTP tests against the hosted project.
+- Browser walkthrough on the hosted project: admitted a student with a
+  compressed photo; activated the account with the simulated code; admitted a
+  **sibling on the same guardian phone** with a separate account; a duplicate
+  registration number was refused case-insensitively and left no orphan
+  account; submitted the teacher form and confirmed the saved teacher,
+  assignment and device mapping; activated the teacher, including a rejected
+  wrong code; reset the teacher password and confirmed the old one is dead;
+  confirmed an un-activated account is confined to `/activate`.
+- Photo compression measured in a real browser: a 24 MB 2400x3000 noise PNG
+  reduced to 189 KB at 600x750 WebP.
 
-**Needs:** SMS in simulate mode is enough to develop; a real OTP needs provider
-credentials (decision 7).
+**Still simulated / not done**
+- **SMS is a development simulation.** No provider account is connected, so no
+  message reaches a phone. Needs owner decision 7 and credentials.
+- Student and teacher **profile pages** (opening an individual record) are not
+  built; the lists show summary cards only.
+- **Editing** a student or teacher after admission is not built.
+- **Promotion** between academic years is not built; the schema supports it.
+- Changing a student's recovery phone (which the brief says requires authority
+  verification and an audit record) is not built.
+
+**Bugs found and fixed during Phase 2 verification**
+- `sms_delivery_logs.job_id` was NOT NULL, so no account OTP could ever be
+  logged — fatal in simulate mode, where the log is the only place the code
+  appears (migration 0023).
+- `sendSms` ignored its insert error and reported success regardless; it now
+  returns `logged` and the tests assert it.
+- `''::date` in both admission RPCs: `coalesce` ran after the cast, so an empty
+  `effective_from` raised instead of defaulting to today (migration 0024).
 
 ## Phase 3 — Routine and attendance
 
 **Build**
+- **First:** bring the design tokens and existing screens into line with
+  [design-system.md](design-system.md) — the white/green/black palette, and the
+  charting rules for the dashboard work below. The current tokens predate that
+  document.
 - Routine builder per class/section with clash detection surfaced in the UI.
 - Teaching-session creation and attendance submission by teachers.
 - Correction flow with a mandatory reason.
@@ -120,13 +152,20 @@ credentials (decision 7).
 ## Phase 7 — Library and SMS
 
 **Build**
-- Library CRUD, publish/unpublish, cover generation from the PDF first page.
+- Library CRUD and publish/unpublish, with book cards built to the REVISED
+  specification in [design-system.md](design-system.md#3-library-book-cards--revised-specification):
+  a coloured area showing subject on top and audience below, the full title
+  elsewhere on the card, an authority-chosen background colour with text
+  contrast computed from it, and a clear Open action for the PDF link.
+  **Cover generation from the PDF first page is cancelled — do not build it.**
 - `sms.bd` adapter behind the provider interface.
 - Daily attendance summary job: eligibility, body composition, segment
   counting, dispatch, delivery-status reconciliation.
 - Authority views of pending, sent and failed messages.
 
 **Done when**
+- A long book title wraps to at most three lines and the card grid stays even.
+- Every authority-chosen card colour yields readable text automatically.
 - Exactly one daily job exists per student per school day.
 - No summary sends while a scheduled, non-cancelled period is unsubmitted.
 - Holidays and fully cancelled days produce no job.

@@ -146,16 +146,38 @@ email and password from step 8.
 
 ## What works right now
 
-Phase 1 delivered the foundation, not the features. Specifically:
+Phases 1 and 2 are complete. Specifically:
 
-- **Working:** sign-in for all three roles, role-based routing, the authority
-  dashboard counters (live queries), the teacher's assignment list, the student
-  profile and fee total, and the public QR card page.
+- **Working:** sign-in for all three roles; role-based routing; the authority
+  dashboard counters; **student admission** with in-browser photo compression
+  under 200 KB; **teacher creation** with class assignments and the fingerprint
+  device-user-id mapping; student and teacher lists with search; **OTP account
+  activation and password recovery** for students and teachers; the teacher's
+  assignment list; the student profile and fee total; and the public QR card
+  page.
 - **Not built:** every screen marked with a phase number in the portal
   navigation. Those items are greyed out rather than linked, so nothing looks
-  finished that is not.
-- **Not connected:** SMS (simulate mode only, no provider credentials), and the
-  K40 fingerprint terminal (no bridge service yet).
+  finished that is not. Also not built within Phase 2's area: individual
+  student/teacher profile pages, editing a record after admission, promotion
+  between academic years, and changing a student's recovery phone.
+- **Not connected:** SMS and the K40 fingerprint terminal — see below.
+
+### A note on OTP during development
+
+`SMS_MODE=simulate` means **no message reaches any phone**. The code is written
+to `sms_delivery_logs` and nowhere else, and the activation screen says so
+plainly. To complete activation while testing, read the code from the log:
+
+```sql
+select request_payload ->> 'body'
+from sms_delivery_logs
+where request_payload ->> 'to' = '+8801XXXXXXXXX'
+order by attempted_at desc
+limit 1;
+```
+
+The code is deliberately **not** shown in the page, so that an incorrect
+simulate flag in production could not expose live codes.
 
 See [`docs/implementation-plan.md`](implementation-plan.md) for what each phase
 covers.
