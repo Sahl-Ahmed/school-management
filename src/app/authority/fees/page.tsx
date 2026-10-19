@@ -8,7 +8,6 @@ import { Banner } from "@/components/form";
 import { RingMeter, StatCard, Pill } from "@/components/charts";
 import { ChargeGenerator, type FeeTypeOption } from "./charge-generator";
 import { schoolToday, monthLabel } from "@/lib/school/calendar";
-import { one } from "@/lib/supabase/relations";
 import { taka } from "@/lib/school/money";
 
 export const metadata: Metadata = { title: "Fees" };
