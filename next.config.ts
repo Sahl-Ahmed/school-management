@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/print/routine/school": ["./src/lib/pdf/fonts/**"],
     "/print/routine/section/[sectionId]": ["./src/lib/pdf/fonts/**"],
+    "/print/receipt/[paymentId]": ["./src/lib/pdf/fonts/**"],
   },
   // Supabase Storage serves student photos / branding assets.
   images: {
