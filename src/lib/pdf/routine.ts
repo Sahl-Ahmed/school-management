@@ -1,6 +1,29 @@
 import "server-only";
 
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+/*
+ * This import must come before anything reaches fontkit's complex-script path.
+ *
+ * @pdf-lib/fontkit ships a Babel-transpiled bundle whose Indic, Arabic and
+ * Universal shapers are generator functions expecting a `regeneratorRuntime`
+ * global that the bundle does not include. Without this polyfill, measuring a
+ * single Bengali character throws "regeneratorRuntime is not defined". Latin
+ * works regardless, because it takes the simple shaper and never reaches a
+ * generator — which is exactly why the problem stayed hidden until Bangla was
+ * actually tried.
+ *
+ * The upstream `fontkit` package needs no polyfill, but its v2 subsetter
+ * dropped the `encodeStream` method pdf-lib calls, so subsetting fails there
+ * and the full 141 KB font embeds in every document. The polyfill is the
+ * smaller compromise: it keeps subsetting, and a class routine stays ~20 KB
+ * rather than ~300 KB.
+ */
+import "regenerator-runtime/runtime.js";
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 
 /**
  * A4 routine PDFs, generated server-side with pdf-lib.
@@ -9,14 +32,16 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
  * asks for a combined school-wide A4 PDF and separate per-class A4 PDFs that
  * the office can download and keep.
  *
- * ONE IMPORTANT LIMITATION, stated here and in the docs rather than discovered
- * later: pdf-lib's StandardFonts are WinAnsi-encoded and cannot render Bangla.
- * The routine prints subject names and teachers' Latin names, which is correct
- * for the owner's "English first" decision, but any Bangla character would
- * throw. `latin()` below replaces unsupported characters rather than crashing,
- * and the caller reports when that happened. Printing Bangla needs an embedded
- * Unicode font (Noto Sans Bengali via @pdf-lib/fontkit), which is deferred
- * until the owner confirms the Bangla locale.
+ * Text is set in Noto Sans Bengali, embedded from `./fonts`, which covers both
+ * Bengali and basic Latin. That matters for more than subject names: a school
+ * whose own name is written in Bangla would otherwise have every sheet it
+ * prints headed by question marks.
+ *
+ * Bengali needs real shaping rather than codepoint-to-glyph mapping — `ি` is
+ * typed after its consonant but renders before it, and clusters like `ক্ষ` form
+ * conjunct ligatures. pdf-lib delegates layout to fontkit, whose Indic shaper
+ * performs both; the conjunct measurably occupies less width than its
+ * unligated parts, which is asserted in tests/pdf.test.ts.
  */
 
 // A4 at 72dpi, in points.
@@ -54,59 +79,82 @@ export type SchoolBranding = {
 const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /**
- * Replaces characters the standard fonts cannot encode.
+ * The embedded family, read from disk once per process.
  *
- * Returns the count so the caller can tell the user their PDF is missing
- * glyphs, instead of silently handing over a document full of question marks.
+ * `next.config.ts` lists this directory in `outputFileTracingIncludes` so a
+ * deployment carries the files; without that, the route would build fine and
+ * then fail at the first request with ENOENT.
  */
-/**
- * Characters above U+00FF that WinAnsi (CP1252) nonetheless encodes, in its
- * 0x80-0x9F range. Rejecting these as "non-Latin" was wrong: the first version
- * of this function dropped the em dashes in the PDF's own title, so a routine
- * printed "Class Routine ? Class 3" while reporting two lost glyphs.
- */
-const CP1252_EXTRAS = new Set([
-  0x20ac, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6,
-  0x2030, 0x0160, 0x2039, 0x0152, 0x017d, 0x2018, 0x2019, 0x201c,
-  0x201d, 0x2022, 0x2013, 0x2014, 0x02dc, 0x2122, 0x0161, 0x203a,
-  0x0153, 0x017e, 0x0178,
-]);
+const FONT_DIR = join(dirname(fileURLToPath(import.meta.url)), "fonts");
 
-function latin(text: string): { text: string; dropped: number } {
-  let dropped = 0;
-  const out = [...text]
-    .map((ch) => {
-      const code = ch.codePointAt(0)!;
+let fontCache: { regular: Uint8Array; bold: Uint8Array } | null = null;
 
-      // Printable Latin-1, plus the CP1252 extras the standard fonts handle.
-      const encodable =
-        (code >= 0x20 && code <= 0xff) || CP1252_EXTRAS.has(code);
-
-      if (!encodable) {
-        dropped += 1;
-        return "?";
-      }
-      return ch;
-    })
-    .join("");
-  return { text: out, dropped };
+function fontBytes(): { regular: Uint8Array; bold: Uint8Array } {
+  if (!fontCache) {
+    fontCache = {
+      regular: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Regular.ttf"))),
+      bold: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Bold.ttf"))),
+    };
+  }
+  return fontCache;
 }
 
-/** Draws text, substituting unsupported characters, and counts the losses. */
+async function embedFonts(doc: PDFDocument): Promise<Fonts> {
+  doc.registerFontkit(fontkit);
+  const bytes = fontBytes();
+  return {
+    // Subsetting keeps only the glyphs actually used, so a routine PDF stays
+    // small even though each source face is 141 KB.
+    regular: await doc.embedFont(bytes.regular, { subset: true }),
+    bold: await doc.embedFont(bytes.bold, { subset: true }),
+  };
+}
+
+/**
+ * Counts characters the embedded font has no glyph for.
+ *
+ * An earlier version substituted everything outside WinAnsi with `?`, because
+ * the standard fonts could not represent Bengali at all. With a real Unicode
+ * font embedded there is nothing to substitute, so this only reports genuine
+ * coverage gaps — some other script pasted into a subject name — and the text
+ * is drawn exactly as given.
+ *
+ * Measured per character rather than per string: fontkit throws on the whole
+ * run if any part is uncovered, so a string-level check could not say how much
+ * was lost.
+ */
+function unsupported(text: string, font: PDFFont): number {
+  let missing = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0)!;
+    if (code < 0x20 && ch !== " ") {
+      missing += 1;
+      continue;
+    }
+    try {
+      font.widthOfTextAtSize(ch, 10);
+    } catch {
+      missing += 1;
+    }
+  }
+  return missing;
+}
+
+/** Draws text as given, returning the count of characters the font lacks. */
 function drawText(
   page: PDFPage,
   text: string,
   opts: { x: number; y: number; size: number; font: PDFFont; color?: typeof INK },
 ): number {
-  const { text: safe, dropped } = latin(text);
-  page.drawText(safe, {
+  const missing = unsupported(text, opts.font);
+  page.drawText(text, {
     x: opts.x,
     y: opts.y,
     size: opts.size,
     font: opts.font,
     color: opts.color ?? INK,
   });
-  return dropped;
+  return missing;
 }
 
 /**
@@ -124,14 +172,23 @@ function fit(
   size: number,
   maxWidth: number,
 ): { text: string; dropped: number } {
-  const { text: safe, dropped } = latin(text);
-  if (font.widthOfTextAtSize(safe, size) <= maxWidth) return { text: safe, dropped };
+  const dropped = unsupported(text, font);
 
-  let cut = safe;
-  while (cut.length > 1 && font.widthOfTextAtSize(`${cut}...`, size) > maxWidth) {
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return { text, dropped };
+
+  /*
+   * Truncate by CODE POINTS, not UTF-16 units.
+   *
+   * `String.slice` would happily cut through a surrogate pair or, worse,
+   * between a Bengali consonant and the virama that binds it to the next one —
+   * turning a conjunct into two unrelated letters rather than shortening the
+   * word. Spreading into an array iterates code points.
+   */
+  let cut = [...text];
+  while (cut.length > 1 && font.widthOfTextAtSize(`${cut.join("")}...`, size) > maxWidth) {
     cut = cut.slice(0, -1);
   }
-  return { text: `${cut}...`, dropped };
+  return { text: `${cut.join("")}...`, dropped };
 }
 
 type Fonts = { regular: PDFFont; bold: PDFFont };
@@ -336,10 +393,7 @@ export async function buildSectionRoutinePdf(
   generatedAt: string,
 ): Promise<PdfResult> {
   const doc = await PDFDocument.create();
-  const fonts: Fonts = {
-    regular: await doc.embedFont(StandardFonts.Helvetica),
-    bold: await doc.embedFont(StandardFonts.HelveticaBold),
-  };
+  const fonts = await embedFonts(doc);
 
   const page = doc.addPage([A4.width, A4.height]);
   let dropped = 0;
@@ -379,10 +433,7 @@ export async function buildSchoolRoutinePdf(
   generatedAt: string,
 ): Promise<PdfResult> {
   const doc = await PDFDocument.create();
-  const fonts: Fonts = {
-    regular: await doc.embedFont(StandardFonts.Helvetica),
-    bold: await doc.embedFont(StandardFonts.HelveticaBold),
-  };
+  const fonts = await embedFonts(doc);
 
   let dropped = 0;
   const pages: PDFPage[] = [];

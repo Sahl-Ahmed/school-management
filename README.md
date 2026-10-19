@@ -11,6 +11,9 @@ amounts are in BDT.
 > the portal navigation are not built yet — they are labelled with the phase
 > that delivers them rather than linked to a page that 404s.
 >
+> Routine PDFs render Bangla correctly, with Noto Sans Bengali embedded and
+> real Indic shaping.
+>
 > **SMS is a development simulation.** No provider is connected, so no message
 > reaches a phone; codes are written to the delivery log only. The K40
 > fingerprint terminal has no bridge yet and is untested against hardware.

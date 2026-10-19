@@ -121,12 +121,6 @@ npm run build      # production build
   dates and excluded from the outstanding count.
 
 **Known limitations**
-- **PDF text is Latin-only.** pdf-lib's standard fonts are WinAnsi-encoded, so
-  Bangla subject or teacher names print as `?`. The generator counts and
-  reports dropped glyphs via an `X-Pdf-Dropped-Glyphs` header rather than
-  failing silently. Printing Bangla needs an embedded Unicode font
-  (Noto Sans Bengali via `@pdf-lib/fontkit`), deferred until the owner
-  confirms the Bangla locale.
 - Bulk roster entry is one lesson at a time; there is no "mark the whole day".
 - Cancelling a period and declaring a holiday have database support and are
   honoured everywhere, but no authority screen yet.
@@ -161,6 +155,26 @@ npm run build      # production build
   that carry subject and teacher names.
 - `latin()` rejected em dashes as non-encodable although CP1252 encodes them,
   so the PDF's own title printed "Class Routine ? Class 3".
+
+**Bangla in PDFs — resolved after Phase 3's merge**
+- Noto Sans Bengali (Regular and Bold) is embedded from `src/lib/pdf/fonts`,
+  replacing the WinAnsi standard fonts that could not represent Bengali at all.
+- The blocker was not the font but the shaper: `@pdf-lib/fontkit` ships a
+  transpiled bundle whose Indic shaper is a generator function expecting a
+  `regeneratorRuntime` global it does not include, so measuring one Bengali
+  character threw. Latin never reached that path, which is why it stayed
+  hidden. A `regenerator-runtime/runtime.js` import fixes it. Upstream
+  `fontkit` needs no polyfill but its v2 subsetter is incompatible with
+  pdf-lib, which would embed the whole 141 KB face per document.
+- Shaping is genuinely applied, not codepoint mapping: the conjunct `ক্ষ`
+  measures narrower than the unligated `কষ`, which a test asserts. Verified
+  visually too — pre-base vowels reorder correctly (`শিক্ষক`) and conjuncts form
+  (`বিজ্ঞান`, `শ্রেণি`).
+- `fit()` truncates by code point rather than UTF-16 unit, so shortening a long
+  title cannot cut a conjunct in half.
+- `next.config.ts` lists the font directory in `outputFileTracingIncludes`,
+  without which the build would succeed and the first production request would
+  fail with ENOENT.
 
 ## Phase 4 — Fees and receipts
 

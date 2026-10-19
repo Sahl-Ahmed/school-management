@@ -1,5 +1,11 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+// The shaping test embeds a font directly, which needs the same polyfill the
+// generator imports. See src/lib/pdf/routine.ts for why.
+import "regenerator-runtime/runtime.js";
 import {
   buildSectionRoutinePdf,
   buildSchoolRoutinePdf,
@@ -80,27 +86,90 @@ describe("per-class routine PDF", () => {
     expect(doc.getPageCount()).toBe(1);
   });
 
-  it("reports dropped glyphs rather than throwing on Bangla", async () => {
-    // The standard PDF fonts are WinAnsi and cannot encode Bangla. The
-    // generator must degrade and SAY SO, not crash and not silently mangle.
+  it("renders Bangla subject and teacher names with no dropped glyphs", async () => {
+    // Noto Sans Bengali is embedded, so Bangla is drawn rather than replaced.
+    // Before it was, every Bengali character became "?".
     const { bytes, droppedGlyphs } = await buildSectionRoutinePdf(
       school,
       section({
         periods: [{
           weekday: 0, period_no: 1, starts_at: "08:00:00", ends_at: "08:45:00",
           subject_name: "বাংলা",
-          teacher_name: "শিক্ষক",
+          teacher_name: "শিক্ষক রহমান",
         }],
       }),
       TEACHING_DAYS, "2026", "19 October 2026",
     );
 
-    expect(droppedGlyphs).toBeGreaterThan(0);
+    expect(droppedGlyphs).toBe(0);
     const doc = await PDFDocument.load(bytes);
     expect(doc.getPageCount()).toBe(1);
   });
 
-  it("reports no dropped glyphs for Latin content", async () => {
+  it("renders a Bangla SCHOOL NAME in the header", async () => {
+    // The realistic case: a school whose own name is Bangla would otherwise
+    // have question marks at the top of every sheet it prints.
+    const { bytes, droppedGlyphs } = await buildSectionRoutinePdf(
+      {
+        name: "আদর্শ উচ্চ বিদ্যালয়",
+        address: "ঢাকা, বাংলাদেশ",
+        office_phone: "+8801300000000",
+        email: "office@school.invalid",
+      },
+      section(), TEACHING_DAYS, "2026", "19 October 2026",
+    );
+
+    expect(droppedGlyphs).toBe(0);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
+  it("applies Bengali shaping, not codepoint-to-glyph mapping", async () => {
+    /*
+     * The substantive check. Bengali needs the Indic shaper: a conjunct such
+     * as ক্ষ (ka + virama + ssa) must become ONE ligature glyph, which occupies
+     * less width than the two letters set separately. If pdf-lib were merely
+     * mapping codepoints, the conjunct would be at least as wide.
+     *
+     * This also guards the regenerator-runtime import: without it, measuring
+     * any Bengali string throws, and this test fails loudly rather than the
+     * PDF quietly losing its Bangla.
+     */
+    const doc = await PDFDocument.create();
+    doc.registerFontkit(fontkit);
+    const font = await doc.embedFont(
+      readFileSync(
+        join(process.cwd(), "src/lib/pdf/fonts/NotoSansBengali-Regular.ttf"),
+      ),
+      { subset: true },
+    );
+
+    const conjunct = font.widthOfTextAtSize("ক্ষ", 10);
+    const separate = font.widthOfTextAtSize("কষ", 10);
+
+    expect(conjunct).toBeGreaterThan(0);
+    expect(conjunct).toBeLessThan(separate);
+  });
+
+  it("truncates a long Bangla title without splitting a conjunct", async () => {
+    // fit() iterates code points; slicing UTF-16 units could cut between a
+    // consonant and its virama and turn a conjunct into two letters.
+    const { bytes, droppedGlyphs } = await buildSectionRoutinePdf(
+      school,
+      section({
+        periods: [{
+          weekday: 0, period_no: 1, starts_at: "08:00:00", ends_at: "08:45:00",
+          subject_name: "পরিবেশ পরিচিতি বিজ্ঞান ও সমাজ বিজ্ঞান দ্বিতীয় পত্র",
+          teacher_name: "অধ্যাপক মোহাম্মদ আব্দুর রহমান চৌধুরী",
+        }],
+      }),
+      TEACHING_DAYS, "2026", "19 October 2026",
+    );
+
+    expect(droppedGlyphs).toBe(0);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
+  it("still reports no dropped glyphs for Latin content", async () => {
     const { droppedGlyphs } = await buildSectionRoutinePdf(
       school, section(), TEACHING_DAYS, "2026", "19 October 2026",
     );

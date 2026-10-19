@@ -290,11 +290,20 @@ another read, so RLS decides what it contains.
 Pages are exactly A4 (595.28 x 841.89pt = 210 x 297mm), asserted in the tests,
 because a sheet that silently became US Letter clips on every print.
 
-**Limitation:** pdf-lib's standard fonts are WinAnsi-encoded and cannot render
-Bangla. Unsupported characters become `?` and are COUNTED, with the total
-returned on an `X-Pdf-Dropped-Glyphs` header, so a silent mangling is
-impossible. Printing Bangla needs an embedded Unicode font; see
-[implementation-plan.md](implementation-plan.md).
+Text is set in **Noto Sans Bengali**, embedded from `src/lib/pdf/fonts`, which
+covers Bengali and basic Latin. A school whose own name is written in Bangla
+would otherwise head every sheet it prints with question marks.
+
+Bengali needs real shaping, not codepoint-to-glyph mapping: `ি` is typed after
+its consonant but renders before it, and clusters like `ক্ষ` form conjunct
+ligatures. pdf-lib delegates layout to fontkit, whose Indic shaper does both —
+but `@pdf-lib/fontkit` ships a transpiled bundle whose shapers are generator
+functions expecting a `regeneratorRuntime` global it omits, so a single Bengali
+character threw until `regenerator-runtime/runtime.js` was imported. Latin never
+reached that code path, which is exactly why it went unnoticed.
+
+Characters the font genuinely lacks are still counted and reported on an
+`X-Pdf-Dropped-Glyphs` header, so a silent mangling remains impossible.
 
 ## Two bugs worth remembering
 

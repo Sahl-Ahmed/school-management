@@ -30,12 +30,14 @@
     "test:all": "vitest run"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
     "next": "16.4.2",
     "pdf-lib": "^1.17.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "regenerator-runtime": "^0.14.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
