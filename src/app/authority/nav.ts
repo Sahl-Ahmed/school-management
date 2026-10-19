@@ -9,7 +9,7 @@ export const AUTHORITY_NAV: NavItem[] = [
   { label: "Dashboard", href: "/authority" },
   { label: "Students", href: "/authority/students" },
   { label: "Teachers", href: "/authority/teachers" },
-  { label: "Routine", note: "phase 3" },
+  { label: "Routine", href: "/authority/routine" },
   { label: "Fees", note: "phase 4" },
   { label: "Exams", note: "phase 5" },
   { label: "Documents", note: "phase 6" },

@@ -71,7 +71,7 @@ export default async function StudentsPage({
           <Link
             href="/authority/students/new"
             className="rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-            style={{ background: "var(--color-brand-600)" }}
+            style={{ background: "var(--accent)" }}
           >
             Admit a student
           </Link>
@@ -88,7 +88,7 @@ export default async function StudentsPage({
             placeholder="Search by name or registration number"
             className="w-full max-w-sm rounded-lg border px-3 py-2 text-sm"
             style={{
-              borderColor: "var(--border-subtle)",
+              borderColor: "var(--line-hairline)",
               background: "var(--surface-raised)",
               color: "var(--text-primary)",
             }}
@@ -96,7 +96,7 @@ export default async function StudentsPage({
           <button
             type="submit"
             className="rounded-lg border px-4 py-2 text-sm font-medium"
-            style={{ borderColor: "var(--border-subtle)" }}
+            style={{ borderColor: "var(--line-hairline)" }}
           >
             Search
           </button>
@@ -115,14 +115,14 @@ export default async function StudentsPage({
           <p
             role="alert"
             className="rounded-lg px-3 py-2 text-sm"
-            style={{ background: "oklch(0.96 0.03 25)", color: "oklch(0.42 0.15 25)" }}
+            style={{ background: "var(--state-bad-soft)", color: "var(--state-bad)" }}
           >
             Could not load students: {error.message}
           </p>
         ) : (students?.length ?? 0) === 0 ? (
           <div
             className="rounded-xl border p-8 text-center"
-            style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+            style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
           >
             <p className="text-sm font-medium">
               {term ? "No students match that search." : "No students admitted yet."}
@@ -152,7 +152,7 @@ export default async function StudentsPage({
                   key={s.id}
                   className="rounded-xl border p-4"
                   style={{
-                    borderColor: "var(--border-subtle)",
+                    borderColor: "var(--line-hairline)",
                     background: "var(--surface-raised)",
                   }}
                 >

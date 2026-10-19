@@ -77,26 +77,90 @@ npm run build      # production build
 - `''::date` in both admission RPCs: `coalesce` ran after the cast, so an empty
   `effective_from` raised instead of defaulting to today (migration 0024).
 
-## Phase 3 — Routine and attendance
+## Phase 3 — Routine and attendance ✅ done
 
-**Build**
-- **First:** bring the design tokens and existing screens into line with
-  [design-system.md](design-system.md) — the white/green/black palette, and the
-  charting rules for the dashboard work below. The current tokens predate that
-  document.
-- Routine builder per class/section with clash detection surfaced in the UI.
-- Teaching-session creation and attendance submission by teachers.
-- Correction flow with a mandatory reason.
-- Student and authority attendance views, by month and by subject.
-- Overdue-submission list for the authority.
-- Dashboard charts from real aggregates.
+**Delivered**
+- Design tokens rebuilt to the white/green/black light palette in
+  [design-system.md](design-system.md), and applied across every screen built
+  in phases 1 and 2 as well as the new ones. Portal chrome is now shared, with
+  a green brand rule and an underlined active section.
+- Chart primitives (`src/components/charts.tsx`) that **require** a denominator
+  as a prop, so a percentage with an invisible basis cannot be rendered, and
+  that say "no data" rather than drawing 0%.
+- Routine builder per class/section, with clash prevention surfaced in the UI:
+  the message names the conflicting lesson, its teacher and its times.
+- Closing a period by effective date rather than deleting it, so past lessons
+  keep their original teacher.
+- Combined school-wide A4 PDF and per-class A4 PDFs, generated server-side
+  with pdf-lib.
+- Teacher attendance: lesson picker by date showing submitted vs not
+  submitted, roster with per-student status and remark, bulk setter,
+  correction flow requiring a reason.
+- Student attendance by month and by subject, with a year-to-date figure.
+- Teacher timetable and student published routine.
+- Authority dashboard: live roster counts, school-wide attendance ring,
+  per-class table, and a list of specific lessons awaiting submission.
 
-**Done when**
-- An unsubmitted lesson never counts as an absence anywhere in the product.
-- A teacher cannot submit for a section they are not assigned to (already
-  enforced by RLS; needs UI coverage).
-- Clashes are refused with a readable message rather than a constraint error.
-- Corrections appear in the audit log with their reason.
+**Verified**
+- 121 local tests, including 34 covering attendance and the routine.
+- Browser walkthrough on the hosted project: both clash types refused with the
+  conflicting lesson named; a valid period added; both PDFs downloaded and
+  confirmed to be exactly 210x297 mm with correct content; a partial roster
+  refused; a full submission with one absence recorded; the student view showing
+  the right denominator; the dashboard showing "no data" rather than 0%.
+- PDFs opened and read, not merely generated.
+
+**The invariant, and how it is enforced**
+- `submit_attendance` writes the session and every student row in one
+  transaction, setting `submitted_at` LAST. A failure leaves the lesson
+  unsubmitted, never half-submitted.
+- Every percentage divides by submitted lessons. Unsubmitted lessons are
+  derived from the routine and reported separately, in the student's own words
+  on their attendance page.
+- Holidays, cancellations and non-teaching weekdays are refused as attendance
+  dates and excluded from the outstanding count.
+
+**Known limitations**
+- **PDF text is Latin-only.** pdf-lib's standard fonts are WinAnsi-encoded, so
+  Bangla subject or teacher names print as `?`. The generator counts and
+  reports dropped glyphs via an `X-Pdf-Dropped-Glyphs` header rather than
+  failing silently. Printing Bangla needs an embedded Unicode font
+  (Noto Sans Bengali via `@pdf-lib/fontkit`), deferred until the owner
+  confirms the Bangla locale.
+- Bulk roster entry is one lesson at a time; there is no "mark the whole day".
+- Cancelling a period and declaring a holiday have database support and are
+  honoured everywhere, but no authority screen yet.
+- Attendance history older than the current month is reachable only by
+  stepping back a month at a time.
+
+**Bugs found and fixed during Phase 3 verification**
+- Migration 0020 had revoked `EXECUTE` on the custom `timerange` constructor
+  from `authenticated`. A routine exclusion constraint evaluates it as the
+  WRITING user, so every attempt to add a routine period failed with
+  "permission denied for function timerange" — on the hosted project too. Fixed
+  in 0026; it went unnoticed earlier because the only constraints exercised
+  then used the built-in `daterange`.
+- `app.owns_student_record` returned NULL rather than false for a non-student.
+  NULL propagated through the visibility `or`, and `if not NULL` does not take
+  its branch, so **any teacher could read any student's attendance**. Fixed in
+  0027, with the guard additionally wrapped in `coalesce(..., false)` so a
+  future NULL denies instead of permitting.
+- `unsubmitted_scheduled` counted `teaching_sessions` with no submission, but
+  such lessons have no row at all, so the figure was structurally always zero
+  and the student-facing notice could never appear. Fixed in 0028 by deriving
+  it from the routine.
+- The attendance roster submitted per-radio form fields. React 19 resets a form
+  after a Server Action, so a rejected submission cleared every radio while the
+  counter still showed them marked, and a retry submitted nothing. The roster
+  now serialises its own state into one field.
+- `formData.get()` returns `null` for an absent optional field and Zod's
+  `.optional()` rejects `null`, so every first submission failed its parse and
+  blamed the lesson and the marks, which were both fine.
+- `fit()` and `drawHeader()` in the PDF generator sanitised text but discarded
+  the dropped-glyph count, so the Bangla warning read zero in exactly the cells
+  that carry subject and teacher names.
+- `latin()` rejected em dashes as non-encodable although CP1252 encodes them,
+  so the PDF's own title printed "Class Routine ? Class 3".
 
 ## Phase 4 — Fees and receipts
 

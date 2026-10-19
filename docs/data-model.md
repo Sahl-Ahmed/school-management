@@ -32,6 +32,10 @@ comments.
 | `0022_admission_rpcs` | atomic `create_student_record` / `create_teacher_record`, trigram search indexes |
 | `0023_sms_log_job_optional` | an SMS delivery log may exist without a queued job (account OTP) |
 | `0024_fix_assignment_effective_from` | nullif before the date cast in both admission RPCs |
+| `0025_attendance_rpcs` | atomic `submit_attendance`, attendance statistics, `pending_attendance` |
+| `0026_range_constructor_grants` | restores EXECUTE on `timerange` for routine constraints |
+| `0027_fix_null_visibility_guard` | `owns_student_record` returns false not NULL; guard fails closed |
+| `0028_unsubmitted_from_routine` | outstanding lessons derived from the routine, not from session rows |
 
 ## Identity
 

@@ -164,9 +164,14 @@ Changes required when the Library phase is built:
 ## 5. Where this is implemented
 
 - Tokens live in `src/app/globals.css` under `@theme` and `:root`.
-- The current token set predates this document and uses a teal-leaning accent;
-  **it needs revising to the white/green/black palette.** Tracked as the first
-  task of Phase 3's UI work.
+- Implemented in Phase 3. `globals.css` now carries the white/green/black
+  palette, a single green hue ramp around 152 degrees, and a light-only
+  `color-scheme` with no dark overrides — this is a light interface by
+  specification, not a dark theme with a light option.
+- Chart primitives live in `src/components/charts.tsx`. `RingMeter`, `BarSeries`
+  and `StatCard` all **require** their denominator as a prop, so a figure with
+  an invisible basis cannot be rendered, and they say "no data" instead of
+  drawing 0%.
 - Shared controls are in `src/components/form.tsx` and
   `src/components/portal-shell.tsx`. New screens use these rather than
   restyling inputs locally.

@@ -45,7 +45,7 @@ export default async function TeachersPage() {
           <Link
             href="/authority/teachers/new"
             className="rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-            style={{ background: "var(--color-brand-600)" }}
+            style={{ background: "var(--accent)" }}
           >
             Add a teacher
           </Link>
@@ -53,12 +53,12 @@ export default async function TeachersPage() {
 
         {error ? (
           <p role="alert" className="rounded-lg px-3 py-2 text-sm"
-             style={{ background: "oklch(0.96 0.03 25)", color: "oklch(0.42 0.15 25)" }}>
+             style={{ background: "var(--state-bad-soft)", color: "var(--state-bad)" }}>
             Could not load teachers: {error.message}
           </p>
         ) : (teachers?.length ?? 0) === 0 ? (
           <div className="rounded-xl border p-8 text-center"
-               style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}>
+               style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}>
             <p className="text-sm font-medium">No teachers yet.</p>
           </div>
         ) : (
@@ -72,7 +72,7 @@ export default async function TeachersPage() {
 
               return (
                 <li key={t.id} className="rounded-xl border p-4"
-                    style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}>
+                    style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
                       <p className="font-medium">{t.full_name}</p>
@@ -95,7 +95,7 @@ export default async function TeachersPage() {
 
                   {warning && (
                     <p className="mt-2 rounded-lg px-2.5 py-1.5 text-xs"
-                       style={{ background: "oklch(0.96 0.06 85)", color: "oklch(0.4 0.1 75)" }}>
+                       style={{ background: "var(--state-warn-soft)", color: "var(--state-warn)" }}>
                       {warning}
                     </p>
                   )}

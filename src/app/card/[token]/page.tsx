@@ -59,13 +59,13 @@ export default async function PublicCardPage({
       <article
         className="w-full max-w-sm overflow-hidden rounded-2xl border shadow-sm"
         style={{
-          borderColor: "var(--border-subtle)",
+          borderColor: "var(--line-hairline)",
           background: "var(--surface-raised)",
         }}
       >
         <header
           className="flex items-center gap-3 px-5 py-4"
-          style={{ background: "var(--color-brand-600)" }}
+          style={{ background: "var(--accent)" }}
         >
           <div>
             <p className="text-sm font-semibold text-white">{school.name}</p>
@@ -95,7 +95,7 @@ export default async function PublicCardPage({
 
         <footer
           className="border-t px-5 py-4 text-xs"
-          style={{ borderColor: "var(--border-subtle)", color: "var(--text-muted)" }}
+          style={{ borderColor: "var(--line-hairline)", color: "var(--text-muted)" }}
         >
           <p className="font-medium" style={{ color: "var(--text-primary)" }}>
             {school.name}

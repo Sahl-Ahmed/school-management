@@ -46,14 +46,14 @@ export function StudentForm({
           <Link
             href="/authority/students/new"
             className="rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-            style={{ background: "var(--color-brand-600)" }}
+            style={{ background: "var(--accent)" }}
           >
             Admit another student
           </Link>
           <Link
             href="/authority/students"
             className="rounded-lg border px-4 py-2.5 text-sm font-medium"
-            style={{ borderColor: "var(--border-subtle)" }}
+            style={{ borderColor: "var(--line-hairline)" }}
           >
             Back to students
           </Link>

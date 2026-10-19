@@ -30,7 +30,7 @@ export default async function ForgotPasswordPage({
 
         <div
           className="rounded-xl border p-5"
-          style={{ borderColor: "var(--border-subtle)", background: "var(--surface-raised)" }}
+          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
         >
           <ActivationFlow purpose="password_reset" defaultRole={defaultRole} />
         </div>

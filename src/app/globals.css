@@ -1,51 +1,95 @@
 @import "tailwindcss";
 
-/*
- * Design tokens.
- *
- * Bangla and English sit side by side throughout the product, so the font
- * stack lists a Bangla face ahead of the Latin fallbacks: Latin glyphs are
- * missing from Bangla fonts and will fall through correctly, whereas the
- * reverse leaves Bangla rendering in a default face with wrong metrics.
- */
+/* ===========================================================================
+   Design tokens — see docs/design-system.md
+   ---------------------------------------------------------------------------
+   White, green and black. A LIGHT interface by specification: not a dark theme
+   with a light option, so `color-scheme: light` is declared and there are no
+   dark-mode overrides. Native form controls and scrollbars therefore render
+   light even when the operating system is in dark mode, rather than producing a
+   half-dark page.
+
+   The greens are a single hue ramp (around 152°, a true green rather than a
+   teal or a lime) so accents, charts and states read as one family. The
+   near-black carries a trace of the same hue, which keeps text from looking
+   blue-cold against the greens.
+
+   Greys are supporting tones only — hairlines, muted labels, subtle fills.
+   They are not a third brand colour.
+   =========================================================================== */
+
 @theme {
   --font-sans:
     "Noto Sans Bengali", "Hind Siliguri", ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
 
-  --color-brand-50: oklch(0.971 0.014 191);
-  --color-brand-100: oklch(0.94 0.03 191);
-  --color-brand-500: oklch(0.63 0.11 191);
-  --color-brand-600: oklch(0.55 0.11 191);
-  --color-brand-700: oklch(0.47 0.1 191);
-  --color-brand-900: oklch(0.31 0.07 191);
+  /* Green ramp */
+  --color-green-50: oklch(0.971 0.021 152);
+  --color-green-100: oklch(0.936 0.045 152);
+  --color-green-200: oklch(0.878 0.078 152);
+  --color-green-300: oklch(0.798 0.105 152);
+  --color-green-400: oklch(0.7 0.13 152);
+  --color-green-500: oklch(0.606 0.138 152);
+  --color-green-600: oklch(0.523 0.127 152);
+  --color-green-700: oklch(0.442 0.107 152);
+  --color-green-800: oklch(0.372 0.086 152);
+  --color-green-900: oklch(0.305 0.066 152);
+
+  /* Near-black, faintly green so it sits with the ramp */
+  --color-ink-900: oklch(0.17 0.012 152);
+  --color-ink-700: oklch(0.32 0.011 152);
+  --color-ink-500: oklch(0.48 0.009 152);
+  --color-ink-300: oklch(0.68 0.006 152);
 }
 
 :root {
-  --surface: oklch(0.99 0.002 240);
+  color-scheme: light;
+
+  /* Surfaces */
+  --surface: oklch(0.985 0.002 152);
   --surface-raised: oklch(1 0 0);
-  --border-subtle: oklch(0.91 0.004 240);
-  --text-primary: oklch(0.22 0.01 240);
-  --text-muted: oklch(0.52 0.012 240);
-}
+  --surface-sunken: oklch(0.965 0.004 152);
+  --surface-accent: oklch(0.971 0.021 152);
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --surface: oklch(0.19 0.008 240);
-    --surface-raised: oklch(0.24 0.009 240);
-    --border-subtle: oklch(0.33 0.01 240);
-    --text-primary: oklch(0.96 0.003 240);
-    --text-muted: oklch(0.71 0.008 240);
-  }
-}
+  /* Text */
+  --text-primary: oklch(0.17 0.012 152);
+  --text-secondary: oklch(0.38 0.011 152);
+  --text-muted: oklch(0.52 0.009 152);
+  --text-on-accent: oklch(1 0 0);
 
-:root[data-theme="dark"] {
-  --surface: oklch(0.19 0.008 240);
-  --surface-raised: oklch(0.24 0.009 240);
-  --border-subtle: oklch(0.33 0.01 240);
-  --text-primary: oklch(0.96 0.003 240);
-  --text-muted: oklch(0.71 0.008 240);
+  /* Lines. Two weights: a hairline for dense data, a stronger one for
+     structural separation. Depth comes from these rather than stacked
+     shadows. */
+  --line-hairline: oklch(0.915 0.005 152);
+  --line-strong: oklch(0.84 0.008 152);
+
+  /* Brand */
+  --accent: oklch(0.523 0.127 152);
+  --accent-hover: oklch(0.455 0.112 152);
+  --accent-soft: oklch(0.936 0.045 152);
+  --accent-ring: oklch(0.606 0.138 152 / 0.35);
+
+  /* States. Green already means "good", so the others stay distinct from it:
+     amber for attention, a warm red for failure, slate for neutral. */
+  --state-good: oklch(0.523 0.127 152);
+  --state-good-soft: oklch(0.945 0.04 152);
+  --state-warn: oklch(0.62 0.13 72);
+  --state-warn-soft: oklch(0.96 0.055 85);
+  --state-bad: oklch(0.55 0.17 25);
+  --state-bad-soft: oklch(0.955 0.03 25);
+  --state-neutral: oklch(0.55 0.02 250);
+  --state-neutral-soft: oklch(0.955 0.008 250);
+
+  /* Radii. Modest, and deliberately smaller for dense data so tables stay
+     readable rather than looking like a row of pills. */
+  --radius-card: 0.625rem;
+  --radius-control: 0.5rem;
+  --radius-data: 0.25rem;
+
+  /* One shadow level, used sparingly. */
+  --shadow-card: 0 1px 2px oklch(0.17 0.012 152 / 0.04);
+  --shadow-raised: 0 2px 8px oklch(0.17 0.012 152 / 0.07);
 }
 
 body {
@@ -53,19 +97,54 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Tabular figures for roll numbers, marks, amounts and attendance counts, so
+/* Headings read slightly tighter than the default, which keeps dense
+   administrative screens from feeling loose. */
+h1, h2, h3 {
+  letter-spacing: -0.011em;
+}
+
+/* Tabular figures for roll numbers, marks, amounts, times and percentages, so
    columns of numbers line up in tables and on printed sheets. */
 .numeric {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
-/*
- * Print rules for the A4 and PVC outputs. Page geometry per document kind is
- * set on the printing route itself; these are the shared resets.
- */
+/* A visible, consistent focus ring. Keyboard users navigate the attendance
+   roster through dozens of controls, so this has to be unmistakable. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+/* --------------------------------------------------------------------------
+   Print
+   --------------------------------------------------------------------------
+   Routines, admit cards and result sheets are printed. Page geometry per
+   document kind is set on the printing route itself; these are the shared
+   resets. Colours are forced to black on white because school printers are
+   usually monochrome, and a green header bar prints as muddy grey.
+   -------------------------------------------------------------------------- */
 @media print {
+  :root {
+    --surface: #fff;
+    --surface-raised: #fff;
+    --surface-sunken: #fff;
+    --surface-accent: #fff;
+    --text-primary: #000;
+    --text-secondary: #000;
+    --text-muted: #333;
+    --line-hairline: #999;
+    --line-strong: #000;
+    --accent: #000;
+    --shadow-card: none;
+    --shadow-raised: none;
+  }
+
   body {
     background: #fff;
     color: #000;
@@ -77,5 +156,15 @@ body {
 
   .page-break {
     break-after: page;
+  }
+
+  /* Keep a routine row or a card from splitting across two sheets. */
+  .avoid-break {
+    break-inside: avoid;
+  }
+
+  /* Table headers repeat on every printed page. */
+  thead {
+    display: table-header-group;
   }
 }
