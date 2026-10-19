@@ -4,6 +4,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export { normaliseBdPhone } from "@/lib/phone";
 
+// The email convention is shared with account provisioning and the remote
+// verification tests, so all three cannot drift apart.
+import {
+  syntheticStudentEmail,
+  syntheticTeacherEmail,
+} from "@/lib/auth/email-convention";
+
+export {
+  syntheticStudentEmail,
+  syntheticTeacherEmail,
+  STUDENT_EMAIL_DOMAIN,
+  TEACHER_EMAIL_DOMAIN,
+} from "@/lib/auth/email-convention";
+
 /**
  * Mapping a public identifier to a Supabase Auth identity.
  *
@@ -25,24 +39,6 @@ export { normaliseBdPhone } from "@/lib/phone";
  * `.invalid` TLD, which RFC 2606 reserves precisely so it can never resolve.
  * No mail is ever sent to it; it exists only because Auth needs a unique key.
  */
-
-export const STUDENT_EMAIL_DOMAIN = "students.school.invalid";
-export const TEACHER_EMAIL_DOMAIN = "teachers.school.invalid";
-
-/**
- * The synthetic address for a newly provisioned account.
- *
- * Derived from the row's uuid rather than from the registration number, so that
- * correcting a mistyped registration number does not require touching the auth
- * identity, and so the address reveals nothing.
- */
-export function syntheticStudentEmail(studentId: string): string {
-  return `s-${studentId}@${STUDENT_EMAIL_DOMAIN}`;
-}
-
-export function syntheticTeacherEmail(teacherId: string): string {
-  return `t-${teacherId}@${TEACHER_EMAIL_DOMAIN}`;
-}
 
 export type IdentityLookup =
   | { found: true; email: string; subjectId: string; mustSetPassword: boolean }
