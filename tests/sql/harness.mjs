@@ -23,6 +23,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
+import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,7 +44,7 @@ export async function migrationFiles() {
  * Throws with the offending file and statement if a migration fails.
  */
 export async function freshDatabase({ quiet = true } = {}) {
-  const db = await PGlite.create({ extensions: { btree_gist, pgcrypto } });
+  const db = await PGlite.create({ extensions: { btree_gist, pgcrypto, pg_trgm } });
 
   await db.exec(await readFile(shimPath, "utf8"));
 

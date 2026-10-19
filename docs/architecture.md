@@ -162,6 +162,27 @@ re-identify a student.
 The accepted trade-off: an individual rating can never be retracted or
 corrected, because nobody can find it again.
 
+## Atomic multi-table writes
+
+Admitting a student writes four tables; adding a teacher writes up to four.
+PostgREST has no transaction spanning several requests, so these go through
+`create_student_record` / `create_teacher_record` (migration 0022) rather than a
+sequence of calls from a server action. Either the whole admission happens or
+none of it does — a student with no guardian phone, or with no class, is not a
+state the system can reach.
+
+Both functions are SECURITY DEFINER, so each checks `app.is_authority()` as its
+first act; without that they would be a way for any signed-in user to create
+students. Both derive the class from the chosen section rather than trusting a
+class id from the payload.
+
+The auth identity is created separately, because passwords belong to Supabase
+Auth. The server action generates the uuid, creates the auth user, then calls
+the function, and **deletes the auth user again if the function fails**. Without
+that compensation a rejected admission would leave an orphan account holding the
+synthetic email, and retrying with corrected details would then fail on a
+duplicate email rather than reporting the real problem.
+
 ## Correctness invariants
 
 These are the rules the schema enforces structurally, so no code path can skip
@@ -216,6 +237,48 @@ Exclusion constraints using `btree_gist` prevent overlapping routine periods
 for the same section or the same teacher, overlapping effective-dated teacher
 assignments for one section/subject, overlapping approved leave, and
 overlapping grade bands within one scale.
+
+## One-time codes
+
+Activation and password recovery share one implementation (`lib/auth/otp.ts`),
+so the two cannot drift apart in how they handle rate limits or errors.
+
+- The code is stored only as an **HMAC-SHA256 digest keyed with the service role
+  key**, not a plain hash. An attacker holding the database alone cannot
+  brute-force a six-digit space offline, because they would also need the key,
+  which lives in the server environment.
+- The digest is keyed on purpose and phone, so a code is bound to its own
+  challenge: a student's activation code cannot be replayed against a teacher,
+  or against a password reset.
+- Comparison is constant-time.
+- A wrong code **increments the challenge's counter rather than destroying it**,
+  so a mistyped digit does not force another SMS, while repeated guessing still
+  exhausts the challenge.
+- Requesting a new code retires the previous one, so two codes are never valid.
+- Requests and verifications are rate-limited per identifier via `auth_attempts`,
+  a table no interactive user can read or write.
+- An unknown identifier and a known one produce the **same** response, because
+  registration numbers are printed on ID cards and a distinguishing message
+  would turn the form into a lookup service.
+
+## SMS
+
+`lib/sms/index.ts` has two modes and never hides which one is active.
+
+`simulate` (the default, and the only mode until a provider account exists)
+records what it *would* have sent in `sms_delivery_logs` with
+`mode = 'simulate'` and returns `delivered: false`. **A simulated send is not a
+working SMS feature and is never reported as one.** The UI says so in the
+activation flow.
+
+Segment counting (`lib/sms/segments.ts`) matters for cost: Bangla is UCS-2 and
+fits 70 characters per segment against 160 for GSM-7, so a 160-character Bangla
+notice is **three** billable segments. Mis-counting understates the school's
+bill threefold on every Bangla message.
+
+`sendSms` returns `logged`, because the log is the only record that a message
+was sent and what it cost. A bug found in Phase 2 had it reporting success while
+every OTP send silently failed to log.
 
 ## Audit
 

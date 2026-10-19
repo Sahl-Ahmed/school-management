@@ -3,7 +3,12 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": resolve(import.meta.dirname, "src") },
+    alias: {
+      "@": resolve(import.meta.dirname, "src"),
+      // See tests/stubs/server-only.ts for why this is aliased rather than
+      // left to resolve to the real package.
+      "server-only": resolve(import.meta.dirname, "tests/stubs/server-only.ts"),
+    },
   },
   test: {
     include: ["tests/**/*.test.{mjs,ts}"],

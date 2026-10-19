@@ -160,6 +160,22 @@ insert into public.work_shifts (id, name, starts_at, ends_at, grace_minutes, is_
 on conflict (id) do nothing;
 
 -- --------------------------------------------------------------------------
+-- A demo fingerprint terminal
+-- ---------------------------------------------------------------------------
+-- Registered so the Add Teacher form can record a device-user-id mapping. No
+-- real terminal is reachable: ip_address is in the TEST-NET-1 documentation
+-- range (RFC 5737), which is guaranteed never to be routed. The mapping alone
+-- transmits no attendance; that needs the on-site bridge built in phase 8.
+-- --------------------------------------------------------------------------
+insert into public.devices (id, name, model, serial_no, location, ip_address, port)
+values (
+  'de000000-0000-4000-8000-000000000001',
+  'Main Gate Terminal (demo)', 'ZKTeco K40', 'SYNTHETIC-K40-0001',
+  'Main gate', '192.0.2.10', 4370
+)
+on conflict (id) do nothing;
+
+-- --------------------------------------------------------------------------
 -- Teachers (synthetic)
 -- --------------------------------------------------------------------------
 insert into public.teachers (

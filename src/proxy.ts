@@ -66,21 +66,45 @@ export async function proxy(request: NextRequest) {
 
   // getUser() revalidates the token with Supabase. getSession() only reads the
   // cookie, which a client could have tampered with, so it is not used here.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
+  /**
+   * A dead refresh token is normal, not a fault: signing out and changing a
+   * password both revoke refresh tokens, and a browser tab opened before that
+   * still carries the old cookie.
+   *
+   * Left alone, the client retries that token on EVERY subsequent request and
+   * logs "Invalid Refresh Token" each time. The behaviour is already correct —
+   * `user` is null and the request is treated as signed out — but a server log
+   * full of expected auth errors is where a real one goes unnoticed. Clearing
+   * the stale cookies makes it happen once instead of forever.
+   */
+  const staleSession =
+    authError?.code === "refresh_token_not_found" ||
+    authError?.code === "refresh_token_already_used";
+
+  function clearStaleAuthCookies(res: NextResponse): NextResponse {
+    if (!staleSession) return res;
+    for (const cookie of request.cookies.getAll()) {
+      // Supabase names its session cookies sb-<project-ref>-auth-token[.N].
+      if (cookie.name.startsWith("sb-") && cookie.name.includes("auth-token")) {
+        res.cookies.delete(cookie.name);
+      }
+    }
+    return res;
+  }
+
   if (!user) {
-    if (isPublic) return response;
+    if (isPublic) return clearStaleAuthCookies(response);
     const target = request.nextUrl.clone();
     target.pathname = "/login";
     target.searchParams.set("next", pathname);
-    return NextResponse.redirect(target);
+    return clearStaleAuthCookies(NextResponse.redirect(target));
   }
 
   // The profile carries the role and whether activation is still outstanding.

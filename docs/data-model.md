@@ -29,6 +29,9 @@ comments.
 | `0019_grants` | explicit table privileges; `anon` gets none |
 | `0020_function_grants` | explicit function privileges; `anon` reaches one function |
 | `0021_audit_actor_durability` | audit attribution survives account deletion |
+| `0022_admission_rpcs` | atomic `create_student_record` / `create_teacher_record`, trigram search indexes |
+| `0023_sms_log_job_optional` | an SMS delivery log may exist without a queued job (account OTP) |
+| `0024_fix_assignment_effective_from` | nullif before the date cast in both admission RPCs |
 
 ## Identity
 
@@ -224,6 +227,10 @@ Things the model does not yet do, stated so they are not mistaken for done:
   the upload form when that is built.
 - `generated_documents` permits several scope columns to be set at once; the
   "exactly one scope" rule is currently a convention, not a CHECK constraint.
-- Library cover generation (`cover_image_path`) has columns but no job.
+- `library_books.cover_image_path` and `cover_generated_at` are **obsolete**.
+  The thumbnail design they served was cancelled by the owner in Phase 2; see
+  [design-system.md](design-system.md#3-library-book-cards--revised-specification).
+  Nothing writes to them, and the Library phase should drop them and add a
+  `card_color` column instead.
 - No materialised views for dashboard aggregates yet. Add them when the
   dashboard queries are written against real data volumes, not before.
