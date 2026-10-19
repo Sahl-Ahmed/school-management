@@ -95,7 +95,7 @@ export function serverEnv(): ServerEnv {
   return cachedServerEnv;
 }
 
-/** True when SMS should be recorded but not actually sent. */
-export function smsIsSimulated(): boolean {
-  return serverEnv().SMS_MODE === "simulate";
-}
+// NOTE: whether SMS is simulated is decided in lib/sms/index.ts, not here. It
+// depends on more than SMS_MODE — a mode of "live" with no API key is still a
+// simulation — and having two answers to that question is how a simulated send
+// ends up reported as a real one.

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PortalShell, type NavItem } from "@/components/portal-shell";
+import { PortalShell } from "@/components/portal-shell";
+import { AUTHORITY_NAV } from "./nav";
 
 export const metadata: Metadata = { title: "Authority" };
 
@@ -11,17 +12,6 @@ export const metadata: Metadata = { title: "Authority" };
  */
 export const dynamic = "force-dynamic";
 
-
-const NAV: NavItem[] = [
-  { label: "Dashboard", href: "/authority" },
-  { label: "Students", note: "phase 2" },
-  { label: "Teachers", note: "phase 2" },
-  { label: "Routine", note: "phase 3" },
-  { label: "Fees", note: "phase 4" },
-  { label: "Exams", note: "phase 5" },
-  { label: "Documents", note: "phase 6" },
-  { label: "Notifications", note: "phase 7" },
-];
 
 export default async function AuthorityDashboard() {
   const supabase = await createClient();
@@ -68,7 +58,7 @@ export default async function AuthorityDashboard() {
     <PortalShell
       portalName="Authority portal"
       userName={profile?.full_name ?? "Authority"}
-      nav={NAV}
+      nav={AUTHORITY_NAV}
     >
       <div className="space-y-6">
         <section>
