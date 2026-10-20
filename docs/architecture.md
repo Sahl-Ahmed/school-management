@@ -282,13 +282,30 @@ every OTP send silently failed to log.
 
 ## Printable documents
 
-Routine PDFs are generated server-side with `pdf-lib` and served as real
-downloadable files from route handlers under `/print/`, loaded with the
+Every PDF is generated server-side with `pdf-lib` and served as a real
+downloadable file from a route handler under `/print/`, loaded with the
 CALLER's own permissions rather than the service role — a PDF route is just
-another read, so RLS decides what it contains.
+another read, so RLS decides what it contains. There are eight of them:
+the school and per-class routines, the fee receipt, one admit card, a class
+stack of admit cards, the exam routine, result sheets, and the ID card.
 
-Pages are exactly A4 (595.28 x 841.89pt = 210 x 297mm), asserted in the tests,
-because a sheet that silently became US Letter clips on every print.
+`src/lib/pdf/base.ts` holds the geometry, the embedded fonts and the text
+helpers, shared by all of them. That sharing is the point: the
+`regeneratorRuntime` polyfill described below was duplicated across two
+generators and would have been duplicated across six.
+
+A4 pages are exactly 595.28 x 841.89pt (210 x 297mm) and ID cards are exactly
+CR80, 54 x 85.6mm portrait or 85.6 x 54mm landscape — both asserted in the
+tests, in points and in millimetres. A sheet that silently became US Letter
+clips on every print, and a card printed 5% out of size is only discovered when
+a box of plastic will not fit a holder.
+
+A PDF route that reads fonts from disk must also be listed in
+`outputFileTracingIncludes` in `next.config.ts`. Next's tracer cannot see a path
+built from `import.meta.url`, so a route left out builds fine, passes every
+local check because the dev server reads the source tree, and then fails at the
+first request in production with ENOENT. The config carries one entry per route
+and a comment saying so.
 
 Text is set in **Noto Sans Bengali**, embedded from `src/lib/pdf/fonts`, which
 covers Bengali and basic Latin. A school whose own name is written in Bangla
@@ -304,6 +321,34 @@ reached that code path, which is exactly why it went unnoticed.
 
 Characters the font genuinely lacks are still counted and reported on an
 `X-Pdf-Dropped-Glyphs` header, so a silent mangling remains impossible.
+
+Three cards fit an A4 admit-card sheet, which drives that layout: the usable
+height is divided in three, each card gets a dashed cut line, and the subject
+timetable inside a card is capped at four rows. A fifth row would push into the
+neighbouring card, so the card prints what fits and then says how many papers
+it left off — a student holding it has to know the list is incomplete.
+
+## The public QR card
+
+`/card/<token>` is the one place an anonymous visitor reads from this database.
+It calls a single function, `get_public_card`, and renders what comes back; it
+performs no join to students, enrollments, contacts, fees, marks or attendance,
+so there is no query here that a later change could widen.
+
+The token is opaque, generated with a CSPRNG in the server action rather than
+with Postgres' `random()`, and is the only thing between a stranger and the
+page. One live token per student is enforced by a unique partial index, so
+issuing a replacement revokes the previous card and a lost card's link stops
+resolving.
+
+What the page shows is a deliberate SUBSET of `qr_tokens.card_snapshot`. The
+snapshot holds exactly the fields the card's template declares — including the
+guardian's phone number, which the school chose to print — and a trigger
+refuses parent names, NIDs, birth certificate numbers, fees, marks and
+attendance regardless of what any template asks for, even for the service role.
+The page then renders fewer fields still: the guardian's number is printed on
+the plastic, where a finder can read it, but is not published to anyone who
+merely scans the code.
 
 ## Two bugs worth remembering
 

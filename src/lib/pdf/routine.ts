@@ -1,30 +1,5 @@
 import "server-only";
 
-/*
- * This import must come before anything reaches fontkit's complex-script path.
- *
- * @pdf-lib/fontkit ships a Babel-transpiled bundle whose Indic, Arabic and
- * Universal shapers are generator functions expecting a `regeneratorRuntime`
- * global that the bundle does not include. Without this polyfill, measuring a
- * single Bengali character throws "regeneratorRuntime is not defined". Latin
- * works regardless, because it takes the simple shaper and never reaches a
- * generator — which is exactly why the problem stayed hidden until Bangla was
- * actually tried.
- *
- * The upstream `fontkit` package needs no polyfill, but its v2 subsetter
- * dropped the `encodeStream` method pdf-lib calls, so subsetting fails there
- * and the full 141 KB font embeds in every document. The polyfill is the
- * smaller compromise: it keeps subsetting, and a class routine stays ~20 KB
- * rather than ~300 KB.
- */
-import "regenerator-runtime/runtime.js";
-
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-
 /**
  * A4 routine PDFs, generated server-side with pdf-lib.
  *
@@ -32,26 +7,31 @@ import fontkit from "@pdf-lib/fontkit";
  * asks for a combined school-wide A4 PDF and separate per-class A4 PDFs that
  * the office can download and keep.
  *
- * Text is set in Noto Sans Bengali, embedded from `./fonts`, which covers both
- * Bengali and basic Latin. That matters for more than subject names: a school
- * whose own name is written in Bangla would otherwise have every sheet it
- * prints headed by question marks.
- *
- * Bengali needs real shaping rather than codepoint-to-glyph mapping — `ি` is
- * typed after its consonant but renders before it, and clusters like `ক্ষ` form
- * conjunct ligatures. pdf-lib delegates layout to fontkit, whose Indic shaper
- * performs both; the conjunct measurably occupies less width than its
- * unligated parts, which is asserted in tests/pdf.test.ts.
+ * The fonts, the regeneratorRuntime polyfill, and the text helpers that make
+ * Bengali shape correctly all live in ./base, shared with the admit card, ID
+ * card, exam routine, receipt and result sheet generators. The long-form
+ * explanation of why the polyfill is needed is there too.
  */
 
-// A4 at 72dpi, in points.
-const A4 = { width: 595.28, height: 841.89 };
-const MARGIN = 36; // 12.7mm — comfortable on a school printer
+import {
+  A4,
+  HAIRLINE,
+  HEADER_FILL,
+  INK,
+  MARGIN,
+  MUTED,
+  PDFDocument,
+  drawFooter,
+  drawHeader,
+  drawText,
+  embedFonts,
+  fit,
+  type Fonts,
+  type PDFPage,
+  type SchoolBranding,
+} from "./base";
 
-const INK = rgb(0.07, 0.09, 0.08);
-const MUTED = rgb(0.42, 0.44, 0.43);
-const HAIRLINE = rgb(0.78, 0.8, 0.79);
-const HEADER_FILL = rgb(0.94, 0.96, 0.95);
+export type { SchoolBranding };
 
 export type RoutinePeriod = {
   weekday: number;
@@ -69,191 +49,7 @@ export type RoutineSection = {
   periods: RoutinePeriod[];
 };
 
-export type SchoolBranding = {
-  name: string;
-  address: string | null;
-  office_phone: string | null;
-  email: string | null;
-};
-
 const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-/**
- * The embedded family, read from disk once per process.
- *
- * `next.config.ts` lists this directory in `outputFileTracingIncludes` so a
- * deployment carries the files; without that, the route would build fine and
- * then fail at the first request with ENOENT.
- */
-const FONT_DIR = join(dirname(fileURLToPath(import.meta.url)), "fonts");
-
-let fontCache: { regular: Uint8Array; bold: Uint8Array } | null = null;
-
-function fontBytes(): { regular: Uint8Array; bold: Uint8Array } {
-  if (!fontCache) {
-    fontCache = {
-      regular: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Regular.ttf"))),
-      bold: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Bold.ttf"))),
-    };
-  }
-  return fontCache;
-}
-
-async function embedFonts(doc: PDFDocument): Promise<Fonts> {
-  doc.registerFontkit(fontkit);
-  const bytes = fontBytes();
-  return {
-    // Subsetting keeps only the glyphs actually used, so a routine PDF stays
-    // small even though each source face is 141 KB.
-    regular: await doc.embedFont(bytes.regular, { subset: true }),
-    bold: await doc.embedFont(bytes.bold, { subset: true }),
-  };
-}
-
-/**
- * Counts characters the embedded font has no glyph for.
- *
- * An earlier version substituted everything outside WinAnsi with `?`, because
- * the standard fonts could not represent Bengali at all. With a real Unicode
- * font embedded there is nothing to substitute, so this only reports genuine
- * coverage gaps — some other script pasted into a subject name — and the text
- * is drawn exactly as given.
- *
- * Measured per character rather than per string: fontkit throws on the whole
- * run if any part is uncovered, so a string-level check could not say how much
- * was lost.
- */
-function unsupported(text: string, font: PDFFont): number {
-  let missing = 0;
-  for (const ch of text) {
-    const code = ch.codePointAt(0)!;
-    if (code < 0x20 && ch !== " ") {
-      missing += 1;
-      continue;
-    }
-    try {
-      font.widthOfTextAtSize(ch, 10);
-    } catch {
-      missing += 1;
-    }
-  }
-  return missing;
-}
-
-/** Draws text as given, returning the count of characters the font lacks. */
-function drawText(
-  page: PDFPage,
-  text: string,
-  opts: { x: number; y: number; size: number; font: PDFFont; color?: typeof INK },
-): number {
-  const missing = unsupported(text, opts.font);
-  page.drawText(text, {
-    x: opts.x,
-    y: opts.y,
-    size: opts.size,
-    font: opts.font,
-    color: opts.color ?? INK,
-  });
-  return missing;
-}
-
-/**
- * Truncates to fit a column, adding an ellipsis when it does not.
- *
- * Returns the dropped-glyph count as well as the text. An earlier version
- * returned only the string, so by the time drawText saw it every unsupported
- * character had already become "?" and the glyph counter reported zero — which
- * made the Bangla warning useless in exactly the cells that carry subject and
- * teacher names.
- */
-function fit(
-  text: string,
-  font: PDFFont,
-  size: number,
-  maxWidth: number,
-): { text: string; dropped: number } {
-  const dropped = unsupported(text, font);
-
-  if (font.widthOfTextAtSize(text, size) <= maxWidth) return { text, dropped };
-
-  /*
-   * Truncate by CODE POINTS, not UTF-16 units.
-   *
-   * `String.slice` would happily cut through a surrogate pair or, worse,
-   * between a Bengali consonant and the virama that binds it to the next one —
-   * turning a conjunct into two unrelated letters rather than shortening the
-   * word. Spreading into an array iterates code points.
-   */
-  let cut = [...text];
-  while (cut.length > 1 && font.widthOfTextAtSize(`${cut.join("")}...`, size) > maxWidth) {
-    cut = cut.slice(0, -1);
-  }
-  return { text: `${cut.join("")}...`, dropped };
-}
-
-type Fonts = { regular: PDFFont; bold: PDFFont };
-
-/**
- * Shared page header: school name, document title, period.
- *
- * Returns the dropped-glyph count alongside the new y position. An earlier
- * version returned only y and discarded the count, which meant a Bangla school
- * NAME would silently print as question marks with no warning — the same bug
- * the fit() helper had.
- */
-function drawHeader(
-  page: PDFPage,
-  fonts: Fonts,
-  school: SchoolBranding,
-  title: string,
-  subtitle: string,
-): { y: number; dropped: number } {
-  let dropped = 0;
-  let y = A4.height - MARGIN;
-
-  dropped += drawText(page, school.name, {
-    x: MARGIN, y: y - 14, size: 15, font: fonts.bold,
-  });
-
-  const contact = [school.address, school.office_phone, school.email]
-    .filter(Boolean)
-    .join("  ·  ");
-  if (contact) {
-    dropped += drawText(page, contact, {
-      x: MARGIN, y: y - 28, size: 7.5, font: fonts.regular, color: MUTED,
-    });
-  }
-
-  dropped += drawText(page, title, {
-    x: MARGIN, y: y - 48, size: 11, font: fonts.bold,
-  });
-  dropped += drawText(page, subtitle, {
-    x: MARGIN, y: y - 61, size: 8, font: fonts.regular, color: MUTED,
-  });
-
-  y -= 70;
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: A4.width - MARGIN, y },
-    thickness: 1,
-    color: INK,
-  });
-
-  return { y: y - 12, dropped };
-}
-
-/** Footer: generation timestamp and page number. */
-function drawFooter(page: PDFPage, fonts: Fonts, generatedAt: string, pageNo: number, pageCount: number) {
-  drawText(page, `Generated ${generatedAt}`, {
-    x: MARGIN, y: MARGIN - 14, size: 7, font: fonts.regular, color: MUTED,
-  });
-  const label = `Page ${pageNo} of ${pageCount}`;
-  const width = fonts.regular.widthOfTextAtSize(label, 7);
-  drawText(page, label, {
-    x: A4.width - MARGIN - width, y: MARGIN - 14, size: 7,
-    font: fonts.regular, color: MUTED,
-  });
-}
 
 /**
  * Draws one section's weekly grid and returns the y position below it.

@@ -87,10 +87,23 @@ export default async function PublicCardPage({
             <CardField label="Section" value={card.section_name} />
             <CardField label="Blood Group" value={card.blood_group} />
             <CardField label="Session" value={card.session} />
-            {/* A contact number appears only when the printed card template
-                deliberately includes one. */}
-            <CardField label="Contact" value={card.contact_phone} mono />
           </dl>
+
+          {/*
+            * The guardian's phone number is DELIBERATELY NOT SHOWN here.
+            *
+            * The school chose to print it on the card front so that whoever
+            * finds a lost card can call the guardian directly — and a finder
+            * holding the card can read it off the plastic. Publishing it on
+            * this page as well would hand the number to anyone who scans the
+            * QR without needing the card at all, which is a wider audience
+            * than the decision was about.
+            *
+            * The snapshot does carry `guardian_phone`, because the printed
+            * card is generated from the same frozen JSON. This page renders a
+            * deliberate SUBSET of it. Adding a field here is a privacy
+            * decision and belongs with the owner, not in a refactor.
+            */}
         </div>
 
         <footer

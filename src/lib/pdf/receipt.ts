@@ -1,15 +1,5 @@
 import "server-only";
 
-// Same reason as routine.ts: fontkit's Indic shaper is a generator function
-// expecting a runtime the bundle omits.
-import "regenerator-runtime/runtime.js";
-
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-
 /**
  * Printable cash receipt.
  *
@@ -22,31 +12,24 @@ import fontkit from "@pdf-lib/fontkit";
  * Everything printed comes from receipts.snapshot, frozen when the payment was
  * recorded. A reprint therefore matches the paper the guardian already holds,
  * even if a fee rate or the student's class changed afterwards.
+ *
+ * The fonts, the regeneratorRuntime polyfill and the text helpers live in
+ * ./base, shared with every other generator here.
  */
 
-const A4 = { width: 595.28, height: 841.89 };
-const MARGIN = 36;
-
-const INK = rgb(0.07, 0.09, 0.08);
-const MUTED = rgb(0.42, 0.44, 0.43);
-const HAIRLINE = rgb(0.78, 0.8, 0.79);
-const ACCENT = rgb(0.18, 0.42, 0.29);
-
-const FONT_DIR = join(dirname(fileURLToPath(import.meta.url)), "fonts");
-
-let fontCache: { regular: Uint8Array; bold: Uint8Array } | null = null;
-
-function fontBytes() {
-  if (!fontCache) {
-    fontCache = {
-      regular: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Regular.ttf"))),
-      bold: new Uint8Array(readFileSync(join(FONT_DIR, "NotoSansBengali-Bold.ttf"))),
-    };
-  }
-  return fontCache;
-}
-
-type Fonts = { regular: PDFFont; bold: PDFFont };
+import {
+  A4,
+  ACCENT,
+  HAIRLINE,
+  INK,
+  MARGIN,
+  MUTED,
+  PDFDocument,
+  embedFonts,
+  rgb,
+  type Fonts,
+  type PDFPage,
+} from "./base";
 
 export type ReceiptSnapshot = {
   student?: {
@@ -295,13 +278,7 @@ function drawReceipt(
  */
 export async function buildReceiptPdf(input: ReceiptInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  doc.registerFontkit(fontkit);
-
-  const bytes = fontBytes();
-  const fonts: Fonts = {
-    regular: await doc.embedFont(bytes.regular, { subset: true }),
-    bold: await doc.embedFont(bytes.bold, { subset: true }),
-  };
+  const fonts = await embedFonts(doc);
 
   const page = doc.addPage([A4.width, A4.height]);
   const half = (A4.height - MARGIN) / 2;
