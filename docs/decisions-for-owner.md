@@ -4,7 +4,7 @@ None of these block the next phase. Each is stored as configuration rather than
 hard-coded, so answering one later is a data change, not a code change. What is
 in place now is a documented default, not a guess presented as policy.
 
-Three already answered:
+Four already answered:
 
 - **Supabase project** — owner creates it; migrations are written and verified,
   steps are in [`setup.md`](setup.md).
@@ -16,22 +16,43 @@ Three already answered:
   meters. Recorded in full in [design-system.md](design-system.md), which also
   carries the **revised Library card specification** that replaces the original
   brief's PDF-thumbnail design.
+- **Grade and GPA scale** — confirmed in phase 5; see section 1 below for what
+  was settled and the two parts of it still open.
 
 ---
 
-## 1. Grade and GPA scale  *(brief 12.1)*
+## 1. Grade and GPA scale  *(brief 12.1)*  — **mostly answered**
 
-**Needed by:** phase 5 (results).
+**Confirmed by the owner in phase 5, and implemented:**
+- The standard GPA-5.0 bands — A+ 80–100 (5.0), A 70–79 (4.0), A− 60–69 (3.5),
+  B 50–59 (3.0), C 40–49 (2.0), D 33–39 (1.0), F below 33 — with a 33% subject
+  pass mark.
+- **Failing one subject fails the term**, whatever the average
+  (`grading_scales.pass_rule = 'all_subjects'`).
+- A failed term prints **GPA 0.00 and the failing grade**, the Bangladeshi
+  convention (`grading_scales.fail_zeroes_gpa`). The averaged figure and the
+  percentage's own band are both kept in each result's frozen snapshot, so the
+  marks-only view is never lost, and the student's sheet says in words why the
+  two figures read as they do.
+- An **explicit absence** scores zero for the subject, prints as "absent"
+  rather than as 0, and is not a missing mark. A blank is refused at entry: a
+  teacher must give every student a score or an absence before the subject can
+  be submitted, and publication is refused while any mark is un-entered.
 
-**Current placeholder:** a GPA-5.0 scale in the seed — A+ 80–100 (5.0), A
-70–79 (4.0), A− 60–69 (3.5), B 50–59 (3.0), C 40–49 (2.0), D 33–39 (1.0),
-F below 33 — with a 33% subject pass mark.
+All of it remains configuration. The authority can change the bands, the pass
+mark, the pass rule and the GPA convention at **/authority/grading** without a
+code change, and each exam keeps the scale it was published under.
 
-**Still to confirm:**
-- Do the bands differ by class? Play and Nursery may not be graded at all.
-- How does a missing mark differ from a zero in the overall result?
-- Are retakes allowed, and does a retake replace or supplement the original?
-- Does failing one subject fail the whole term?
+**Still to confirm — neither blocks anything built so far:**
+- **Do the bands differ by class?** Play and Nursery may not be graded at all.
+  There is a setting for the GPA half of this already
+  (`grading_scales.no_gpa_below_level` prints marks and grades but no GPA up to
+  a chosen class level); it is currently off, so every class gets a GPA. If
+  those classes should not be graded at all, that is a further change.
+- **Are retakes allowed, and does a retake replace or supplement the original?**
+  Nothing is built for retakes. Today a corrected mark is an audited correction
+  to the same exam, which is not the same thing as a retake sitting beside the
+  first attempt.
 
 ## 2. Admit-card fee window  *(brief 12.2)*
 

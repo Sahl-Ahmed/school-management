@@ -37,6 +37,9 @@ comments.
 | `0027_fix_null_visibility_guard` | `owns_student_record` returns false not NULL; guard fails closed |
 | `0028_unsubmitted_from_routine` | outstanding lessons derived from the routine, not from session rows |
 | `0029_fee_rpcs` | atomic billing, payment recording, reversal, waiving, and fee summaries |
+| `0030_exam_rpcs` | the `pass_rule` enum and grading-scale policy columns, `app.grade_for`, atomic `submit_marks`, `exam_submission_progress`, `publish_results`, `send_class_test_result`, `student_results` |
+| `0031_grade_for_anon_revoke` | revokes `anon`'s default EXECUTE on `app.grade_for` |
+| `0032_overall_grade_follows_result` | a failed term prints the failing grade, not the percentage's band |
 
 ## Identity
 
@@ -164,6 +167,31 @@ received; reprinting produces the same paper.
 
 `routine_published_at` and `results_published_at` are independent, because
 students see an exam schedule long before any marks exist.
+
+### Grading policy lives in the database
+
+`grade_bands` holds the bands, one per grade per scale, with an exclusion
+constraint over `numrange(min_pct, max_pct, '[]')` so a percentage can never map
+to two grades. `app.grade_for(scale, pct)` is the single place a percentage
+becomes a grade.
+
+Three columns on `grading_scales` carry the rest of the policy:
+
+| Column | What it decides |
+| --- | --- |
+| `pass_rule` | `all_subjects` (the owner's choice), `average`, or `allow_one_fail` |
+| `fail_zeroes_gpa` | whether a failed term prints GPA 0.00 and the failing grade |
+| `no_gpa_below_level` | the class level up to which marks and grades print but no GPA |
+
+`exams.grading_scale_id` records the scale an exam was published under, so
+changing the policy later cannot re-grade a past exam. The snapshot additionally
+keeps `gpa_computed` and `grade_computed` — the marks-only figures — beside the
+printed ones, so a zeroed result is always explainable from its own row.
+
+Attendance on a result sheet comes from the **term's** `attendance_window_start`
+/ `attendance_window_end`, not the academic year, and counts only lessons a
+teacher actually submitted. A term with no window prints no attendance figure
+rather than a figure computed over the wrong dates.
 
 ## Fees
 

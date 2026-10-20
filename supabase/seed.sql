@@ -105,15 +105,32 @@ on conflict do nothing;
 -- --------------------------------------------------------------------------
 -- Grading scale
 -- ---------------------------------------------------------------------------
--- PLACEHOLDER. These bands follow the common Bangladeshi GPA-5 pattern, but
--- the exact scale, pass rules, missing-mark handling and retake policy are an
--- owner decision (brief 12.1). Nothing in application code assumes these
--- numbers; they are read from the table.
+-- CONFIRMED BY THE OWNER (phase 5), no longer a placeholder:
+--
+--   * Standard GPA-5 bands, below.
+--   * A student must reach the pass mark in EVERY subject to pass the term
+--     (grading_scales.pass_rule = 'all_subjects', the column default).
+--   * A failed subject prints GPA 0.00 and the failing grade, the Bangladeshi
+--     convention (fail_zeroes_gpa, the column default). The averaged figure
+--     and the percentage's own band are kept in each result's snapshot.
+--
+-- Still nothing in application code assumes these numbers: they are read from
+-- these tables, and the authority can change them at /authority/grading.
+-- Retake policy and missing-mark handling beyond an explicit absence remain
+-- open (docs/decisions-for-owner.md).
 -- --------------------------------------------------------------------------
 insert into public.grading_scales (id, name, academic_year_id, is_default, subject_pass_pct) values
-  ('9ab00000-0000-4000-8000-000000000001', 'GPA 5.0 (placeholder)',
+  ('9ab00000-0000-4000-8000-000000000001', 'GPA 5.0',
    'a0000000-0000-4000-8000-000000000001', true, 33.00)
 on conflict (id) do nothing;
+
+-- The seed named this scale "GPA 5.0 (placeholder)" before the owner confirmed
+-- it, and `on conflict do nothing` above cannot correct a row that already
+-- exists on a project seeded earlier.
+update public.grading_scales
+   set name = 'GPA 5.0'
+ where id = '9ab00000-0000-4000-8000-000000000001'
+   and name = 'GPA 5.0 (placeholder)';
 
 insert into public.grade_bands (scale_id, grade, min_pct, max_pct, grade_point, is_pass) values
   ('9ab00000-0000-4000-8000-000000000001', 'A+', 80.00, 100.00, 5.00, true),

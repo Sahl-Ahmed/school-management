@@ -4,19 +4,26 @@ Three role-based portals — **Authority**, **Teacher** and **Student** — over
 connected database, for a school in Bangladesh. Times display in `Asia/Dhaka`;
 amounts are in BDT.
 
-> **Status: phases 1 to 4 of 9 complete.** The data model, permissions,
+> **Status: phases 1 to 5 of 9 complete.** The data model, permissions,
 > accounts, admission, photo compression, OTP activation, the class routine
 > with A4 PDFs, teacher-submitted attendance with student, class and dashboard
-> views, and fee billing, payment entry and printable receipts are built and
-> verified against a hosted Supabase project. Greyed-out items in
-> the portal navigation are not built yet — they are labelled with the phase
-> that delivers them rather than linked to a page that 404s.
+> views, fee billing, payment entry and printable receipts, and term exams with
+> teacher mark entry, submission tracking, result publication and student
+> result views are built and verified against a hosted Supabase project.
+> Greyed-out items in the portal navigation are not built yet — they are
+> labelled with the phase that delivers them rather than linked to a page that
+> 404s.
 >
 > Routine PDFs render Bangla correctly, with Noto Sans Bengali embedded and
-> real Indic shaping.
+> real Indic shaping. There is no result-sheet PDF yet; printables are phase 6.
+>
+> The grading policy — bands, subject pass mark, pass rule and GPA convention —
+> is configuration the authority edits at `/authority/grading`, not code. The
+> owner has confirmed a standard GPA-5 scale where every subject must be passed;
+> see [decisions-for-owner.md](docs/decisions-for-owner.md).
 >
 > **SMS is a development simulation.** No provider is connected, so no message
-> reaches a phone; codes are written to the delivery log only. The K40
+> reaches a phone; codes and result notifications are recorded only. The K40
 > fingerprint terminal has no bridge yet and is untested against hardware.
 
 ## Quick start
@@ -72,8 +79,8 @@ dispatch and device ingest.
 | `npm run dev` | Development server |
 | `npm run build` | Production build (no credentials needed) |
 | `npm run verify` | Typecheck + lint + schema/seed check + tests |
-| `npm test` | 166 local tests (offline — never touches the network) |
-| `npm run test:remote` | Access, Storage and OTP tests against the hosted project |
+| `npm test` | 205 local tests (offline — never touches the network) |
+| `npm run test:remote` | Access, Storage, OTP and exam-workflow tests against the hosted project |
 | `npm run test:remote:cleanup` | Removes the accounts the remote tests create |
 | `npm run check:env` | Validates .env.local by shape without printing any value |
 | `npm run report:remote-schema` | Read-only privilege and RLS audit of the live project |

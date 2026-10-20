@@ -24,9 +24,12 @@ const admin = createClient(
 );
 
 // Synthetic student/teacher identities, plus any verification account named
-// <something>.phase1-verification@school.invalid. Nothing else is ever matched,
-// so a real authority account created by hand is never touched.
-const REMOVABLE = /@(students|teachers)\.school\.invalid$|^[a-z0-9-]+\.phase1-verification@school\.invalid$/;
+// <something>.phase<N>-<tag>@school.invalid. Nothing else is ever matched, so a
+// real authority account created by hand is never touched. The phase number is
+// a pattern rather than a literal because each phase's remote suite uses its
+// own tag, and phase 2 left an account behind when this only matched phase 1.
+const REMOVABLE =
+  /@(students|teachers)\.school\.invalid$|^[a-z0-9-]+\.phase\d+-[a-z0-9-]+@school\.invalid$/;
 
 const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
 if (error) {
