@@ -8,6 +8,6 @@ export const STUDENT_NAV: NavItem[] = [
   { label: "Fees", href: "/student/fees" },
   { label: "Results", href: "/student/results" },
   { label: "Teacher feedback", href: "/student/feedback" },
-  { label: "Library", note: "phase 7" },
+  { label: "Library", href: "/student/library" },
   { label: "ID & admit card", href: "/student/documents" },
 ];

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { publicCardFields } from "@/lib/school/card-fields";
+import { brandingUrl } from "@/lib/school/branding";
 
 /**
  * The public digital ID card.
@@ -10,11 +13,19 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Everything shown comes from a single RPC, `get_public_card`, which returns a
  * frozen snapshot of the fields printed on that card plus the school's own
- * contact details. This page performs no query against students, enrollments,
- * contacts, fees, marks or attendance — so there is no join here that a future
- * change could widen. Parent names, NIDs and the birth certificate number are
- * excluded at the database level by a trigger on qr_tokens, not merely omitted
- * from this template.
+ * name, logo, email and office number. This page performs no query against
+ * students, enrollments, contacts, fees, marks or attendance — so there is no
+ * join here that a future change could widen. Parent names, NIDs and the birth
+ * certificate number are excluded at the database level by a trigger on
+ * qr_tokens, not merely omitted from this template.
+ *
+ * What it shows is decided by src/lib/school/card-fields.ts, the same list the
+ * card template draws from. The owner's rule is that **the page shows the same
+ * student details the card prints** — so a contact number printed on the card
+ * is visible to anyone who scans it, by deliberate choice, and a field left off
+ * the card is nowhere. Keeping the list in one module is what stopped the two
+ * drifting apart: the page previously looked for a key nothing wrote, and
+ * silently dropped a field the card printed.
  */
 
 export const metadata: Metadata = {
@@ -54,6 +65,11 @@ export default async function PublicCardPage({
   const payload = data as PublicCard;
   const { card, school } = payload;
 
+  const fields = publicCardFields(card);
+  const headings = fields.filter((f) => f.heading);
+  const details = fields.filter((f) => !f.heading);
+  const logo = brandingUrl(school.logo_path);
+
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <article
@@ -67,43 +83,52 @@ export default async function PublicCardPage({
           className="flex items-center gap-3 px-5 py-4"
           style={{ background: "var(--accent)" }}
         >
-          <div>
-            <p className="text-sm font-semibold text-white">{school.name}</p>
+          {/* The logo is served from the public `branding` bucket. Absent until
+              the school supplies one, which is why its absence is a non-event
+              rather than a broken image. */}
+          {logo && (
+            <Image
+              src={logo}
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 rounded bg-white/90 object-contain p-0.5"
+              unoptimized
+            />
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{school.name}</p>
             <p className="text-xs text-white/80">Student Identity Card</p>
           </div>
         </header>
 
         <div className="space-y-4 px-5 py-5">
-          {typeof card.full_name === "string" && (
-            <div>
-              <h1 className="text-lg font-semibold leading-tight">{card.full_name}</h1>
-            </div>
+          {headings.map((f) => (
+            <h1
+              key={f.key}
+              className={
+                f.key === "full_name"
+                  ? "text-lg font-semibold leading-tight"
+                  : "text-base font-medium leading-tight"
+              }
+              style={f.key === "full_name" ? undefined : { color: "var(--text-secondary)" }}
+            >
+              {f.value}
+            </h1>
+          ))}
+
+          {details.length > 0 && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              {details.map((f) => (
+                <div key={f.key}>
+                  <dt className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {f.label}
+                  </dt>
+                  <dd className={`font-medium ${f.numeric ? "numeric" : ""}`}>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
           )}
-
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            <CardField label="Registration No" value={card.registration_no} mono />
-            <CardField label="Roll" value={card.roll_no} mono />
-            <CardField label="Class" value={card.class_name} />
-            <CardField label="Section" value={card.section_name} />
-            <CardField label="Blood Group" value={card.blood_group} />
-            <CardField label="Session" value={card.session} />
-          </dl>
-
-          {/*
-            * The guardian's phone number is DELIBERATELY NOT SHOWN here.
-            *
-            * The school chose to print it on the card front so that whoever
-            * finds a lost card can call the guardian directly — and a finder
-            * holding the card can read it off the plastic. Publishing it on
-            * this page as well would hand the number to anyone who scans the
-            * QR without needing the card at all, which is a wider audience
-            * than the decision was about.
-            *
-            * The snapshot does carry `guardian_phone`, because the printed
-            * card is generated from the same frozen JSON. This page renders a
-            * deliberate SUBSET of it. Adding a field here is a privacy
-            * decision and belongs with the owner, not in a refactor.
-            */}
         </div>
 
         <footer
@@ -122,27 +147,5 @@ export default async function PublicCardPage({
         </footer>
       </article>
     </main>
-  );
-}
-
-function CardField({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string | number | null | undefined;
-  mono?: boolean;
-}) {
-  // Fields the card template did not print simply do not appear.
-  if (value === null || value === undefined || value === "") return null;
-
-  return (
-    <div>
-      <dt className="text-xs" style={{ color: "var(--text-muted)" }}>
-        {label}
-      </dt>
-      <dd className={`font-medium ${mono ? "numeric" : ""}`}>{value}</dd>
-    </div>
   );
 }

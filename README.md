@@ -4,14 +4,22 @@ Three role-based portals — **Authority**, **Teacher** and **Student** — over
 connected database, for a school in Bangladesh. Times display in `Asia/Dhaka`;
 amounts are in BDT.
 
-> **Status: phases 1 to 6 of 9 complete.** The data model, permissions,
-> accounts, admission, photo compression and OTP activation; the class routine
-> and teacher-submitted attendance; fee billing, payment entry and receipts;
-> term exams with mark entry, result publication and student results; and
+> **Status: phases 1 to 6 complete, phase 7 part done.** The data model,
+> permissions, accounts, admission, photo compression and OTP activation; the
+> class routine and teacher-submitted attendance; fee billing, payment entry and
+> receipts; term exams with mark entry, result publication and student results;
 > anonymous teacher feedback, admit cards, ID cards, exam routines and result
-> sheets are built and verified against a hosted Supabase project. Greyed-out
-> items in the portal navigation are not built yet — they are labelled with the
-> phase that delivers them rather than linked to a page that 404s.
+> sheets; and the shared library are built and verified against a hosted
+> Supabase project.
+>
+> **Two integrations are PENDING and are not claimed as working.** The owner has
+> not opened an SMS provider account and has not bought the K40 fingerprint
+> terminal. SMS message templates, rules, the queue, duplicate prevention and
+> delivery reporting are all built and tested **in simulation**: messages are
+> rendered, costed and recorded, and nothing reaches a phone. A simulated
+> dispatch is marked *skipped*, never *sent*, so the delivery figures never
+> describe messages that do not exist. Connecting a provider later is a
+> credentials change, not a rewrite.
 >
 > **Every PDF renders Bangla correctly**, with Noto Sans Bengali embedded and
 > real Indic shaping: routines, receipts, admit cards (three to an A4 sheet),
@@ -28,9 +36,12 @@ amounts are in BDT.
 > an admit-card fee cutoff of the exam's own month, and the ID card's printed
 > fields; see [decisions-for-owner.md](docs/decisions-for-owner.md).
 >
-> **SMS is a development simulation.** No provider is connected, so no message
-> reaches a phone; codes and result notifications are recorded only. The K40
-> fingerprint terminal has no bridge yet and is untested against hardware.
+> **A cost trap worth knowing about.** Bangla cannot be sent as GSM-7, so a
+> Bangla message is billed at 70 characters per segment against 160 for English.
+> One character outside GSM-7 does the same to an English message: the shipped
+> result template contained an em dash, which made a 96-character message cost
+> two segments instead of one. The template editor now names any such character
+> and states the saving.
 
 ## Quick start
 
@@ -85,8 +96,9 @@ dispatch and device ingest.
 | `npm run dev` | Development server |
 | `npm run build` | Production build (no credentials needed) |
 | `npm run verify` | Typecheck + lint + schema/seed check + tests |
-| `npm test` | 275 local tests (offline — never touches the network) |
-| `npm run test:remote` | Access, Storage, OTP, exam and document tests against the hosted project |
+| `npm test` | 323 local tests (offline — never touches the network) |
+| `npm run test:remote` | Access, Storage, OTP, exam, document and library tests against the hosted project |
+| `npm run demo:accounts` | Restores the owner's demo logins (the remote tests reset their passwords) |
 | `npm run test:remote:cleanup` | Removes the accounts the remote tests create |
 | `npm run check:env` | Validates .env.local by shape without printing any value |
 | `npm run report:remote-schema` | Read-only privilege and RLS audit of the live project |

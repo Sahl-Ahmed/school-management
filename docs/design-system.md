@@ -143,10 +143,27 @@ Already present in `library_books` and still correct:
 - `title`, `title_bn` — the full title.
 - `drive_url`, `link_ok`, `link_checked_at` — the Open action and its health.
 
-Changes required when the Library phase is built:
+**BUILT in phase 7.** What was added:
 
-- **Add** a background colour column (for example `card_color`), validated as a
-  hex colour.
+- `card_color`, validated as a 6-digit hex colour, so a malformed value cannot
+  reach a rendered card's style attribute.
+- `subject_label`, the coloured area's top line. `category` still carries the
+  same value, so older rows sort and filter identically.
+- `class_to_id`, **a deviation from this document**, because the example above
+  is `Class 9-10` and a single `class_id` cannot express a range. Neither set
+  reads as `Everyone`, one set as `Class 5`, both as `Class 9-10`; a trigger
+  refuses a range that runs backwards, and the label is derived from real class
+  rows by `library_catalogue()` rather than typed as free text.
+
+Text colour is **not** stored. `readableOn` in `src/lib/school/contrast.ts`
+computes it from the background at render time, which is what makes an
+unreadable combination impossible rather than merely discouraged. A sweep of the
+colour cube finds 216 colours that clear AA against neither black nor white;
+tests assert every one of them is rescued by shading, and that all twelve
+curated presets clear AA as chosen.
+
+The cancelled columns:
+
 - **Stop using** `cover_image_path` and `cover_generated_at`. They are retained
   for now so no migration is needed before the Library phase, but nothing should
   write to them, and the Library phase should drop them.

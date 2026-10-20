@@ -503,13 +503,14 @@ export default async function CardsPage({
                   </p>
                 </div>
 
-                <Banner tone="info">
+                <Banner tone="warning">
                   The card front prints the guardian&apos;s phone number, as the
-                  school chose, so whoever finds a lost card can call them. That
-                  number is <strong>not</strong> shown on the card&apos;s public
-                  QR page — scanning the code gives only the student&apos;s name,
-                  class, roll, registration number, blood group and session, plus
-                  the school&apos;s own contact details.
+                  school chose, so whoever finds a lost card can call them. The
+                  card&apos;s public QR page shows the same details the card
+                  prints, so that number is <strong>readable by anyone who scans
+                  the code</strong> — tell guardians before you hand the cards
+                  out. Nothing beyond the printed fields is published: no parent
+                  names, no fees, no marks, no attendance.
                 </Banner>
 
                 <div className="mt-3">

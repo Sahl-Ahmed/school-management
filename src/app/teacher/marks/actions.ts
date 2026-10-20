@@ -175,13 +175,50 @@ export async function sendClassTestResult(
 
   const result = data as { students: number };
 
+  /*
+   * Queue the per-student messages.
+   *
+   * The once-only guard lives in send_class_test_result above, which sets
+   * result_sent_at inside its own transaction — so this runs only on the first
+   * successful send. The queue then has its own guard as well: the dedupe key
+   * is `class_test_result|<student>|<test>`, UNIQUE, so even if this were
+   * somehow reached twice no student would be messaged twice.
+   *
+   * A failure to queue is reported rather than swallowed. The test is already
+   * marked sent at this point, so silently queueing nothing would leave the
+   * teacher believing guardians had been told.
+   */
+  const queued = await supabase.rpc("queue_class_test_results", {
+    p_class_test_id: testId,
+  });
+
   revalidatePath("/teacher/class-tests");
+  revalidatePath("/authority/notifications");
+
+  const counts = queued.data as
+    | { queued: number; already_queued: number; no_contact: number }
+    | null;
+
+  if (queued.error) {
+    return {
+      ok: true,
+      notice:
+        `Marked as sent for ${result.students} students, but the messages could ` +
+        `not be queued: ${queued.error.message}. Ask the school office to check ` +
+        `the notification queue.`,
+    };
+  }
 
   return {
     ok: true,
     notice:
-      `Marked as sent for ${result.students} students. ` +
-      `DEVELOPMENT SIMULATION — no SMS provider is connected, so no message ` +
-      `reached any phone. Real delivery arrives in phase 7.`,
+      `Marked as sent for ${result.students} students; ` +
+      `${counts?.queued ?? 0} message${(counts?.queued ?? 0) === 1 ? "" : "s"} queued` +
+      ((counts?.no_contact ?? 0) > 0
+        ? ` (${counts!.no_contact} had no phone number on record)`
+        : "") +
+      `. SIMULATION — no SMS provider is connected, so nothing reached any ` +
+      `phone. The office can see the queue and what it would cost under ` +
+      `Notifications.`,
   };
 }

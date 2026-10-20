@@ -7,6 +7,6 @@ export const TEACHER_NAV: NavItem[] = [
   { label: "Routine", href: "/teacher/routine" },
   { label: "Marks", href: "/teacher/marks" },
   { label: "Class tests", href: "/teacher/class-tests" },
-  { label: "Library", note: "phase 7" },
+  { label: "Library", href: "/teacher/library" },
   { label: "My attendance & leave", note: "phase 8" },
 ];

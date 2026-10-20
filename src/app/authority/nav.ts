@@ -15,5 +15,6 @@ export const AUTHORITY_NAV: NavItem[] = [
   { label: "Grading", href: "/authority/grading" },
   { label: "Feedback", href: "/authority/feedback" },
   { label: "Cards & printables", href: "/authority/cards" },
-  { label: "Notifications", note: "phase 7" },
+  { label: "Library", href: "/authority/library" },
+  { label: "Notifications", href: "/authority/notifications" },
 ];
