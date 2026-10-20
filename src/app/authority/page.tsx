@@ -398,19 +398,27 @@ export default async function AuthorityDashboard() {
         >
           <h2 className="text-sm font-semibold">Build status</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-            Every figure above is a live query. Sections below are not built yet
-            and appear greyed out in the navigation.
+            Every figure above is a live query. What is left to build appears
+            greyed out in the navigation.
           </p>
           <ul className="mt-3 grid gap-1.5 text-sm" style={{ color: "var(--text-secondary)" }}>
-            <li>Phase 4 — fee posting and receipts</li>
-            <li>Phase 5 — exams, marks, result publishing</li>
-            <li>Phase 6 — feedback, admit cards, ID cards, printable PDFs</li>
-            <li>Phase 7 — library and SMS delivery</li>
+            <li>Phase 7 — library, SMS delivery and result notifications</li>
             <li>Phase 8 — K40 fingerprint bridge</li>
+            <li>Phase 9 — hardening and launch</li>
           </ul>
-          <p className="mt-3 text-sm">
+          <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+            SMS is a development simulation until phase 7: nothing sent from
+            this system reaches a phone yet.
+          </p>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <Link href="/authority/routine" className="font-medium underline">
               Manage the class routine
+            </Link>
+            <Link href={"/authority/exams" as never} className="font-medium underline">
+              Exams and results
+            </Link>
+            <Link href={"/authority/cards" as never} className="font-medium underline">
+              Cards and printables
             </Link>
           </p>
         </section>

@@ -40,6 +40,9 @@ comments.
 | `0030_exam_rpcs` | the `pass_rule` enum and grading-scale policy columns, `app.grade_for`, atomic `submit_marks`, `exam_submission_progress`, `publish_results`, `send_class_test_result`, `student_results` |
 | `0031_grade_for_anon_revoke` | revokes `anon`'s default EXECUTE on `app.grade_for` |
 | `0032_overall_grade_follows_result` | a failed term prints the failing grade, not the percentage's band |
+| `0033_documents_rpcs` | `exam_seat_tokens`, feedback target generation, admit-card issue and override, QR issue/revoke, the printable payloads, and the ID card / admit card / result sheet templates |
+| `0034_qr_token_comment_fix` | corrects what `issue_qr_token` says about the guardian phone |
+| `0035_feedback_campaign_choice` | picks the open feedback round, not the oldest, when a term has several |
 
 ## Identity
 
@@ -192,6 +195,70 @@ Attendance on a result sheet comes from the **term's** `attendance_window_start`
 / `attendance_window_end`, not the academic year, and counts only lessons a
 teacher actually submitted. A term with no window prints no attendance figure
 rather than a figure computed over the wrong dates.
+
+### Seat codes
+
+`exam_seat_tokens` holds one random ten-character code per student per exam,
+issued the first time an admit card is issued and reprinted identically
+thereafter — so a reprint matches the card already in the student's hand. The
+alphabet excludes I, O, 0 and 1, because the code is read off paper and typed by
+hand at a hall door. It is stored rather than derived, because a code computed
+from the student and exam ids would be guessable from a registration number,
+which defeats the point of checking it.
+
+## Feedback, and why anonymity is structural
+
+```
+feedback_targets      student_id + teacher_id   which forms a student must fill
+feedback_completions  student_id                WHO has finished
+feedback_responses    teacher_id only           WHAT was answered
+feedback_comments     teacher_id only           the optional text
+```
+
+The split is the whole design. `feedback_responses` and `feedback_comments`
+carry **no student column at all** — not a hidden one, not an encrypted one, not
+a foreign key — so even a full database dump cannot attribute a rating.
+Double submission is still prevented, because the uniqueness sits on
+`feedback_targets.answered_at` and `feedback_completions`, which are allowed to
+name students precisely because they hold no answers.
+
+`feedback_responses.submitted_on` is a **date, not a timestamp**. A full
+timestamp would let submission order be correlated against
+`feedback_completions.updated_at` and re-identify who said what.
+
+There is **no teacher policy** on either answer table, and none should ever be
+added — not even for an aggregate view. `feedback_analysis` additionally guards
+on `app.is_authority()` internally, so a teacher calling it gets an empty set
+rather than their own averages.
+
+The cost of this, which the UI states plainly: a submitted rating **cannot be
+changed or withdrawn**, because nothing can find it again.
+
+`app.gating_feedback_campaign(term)` decides which round gates a term's admit
+cards: the open one, else the closed one, else the newest draft. Both
+`admit_card_eligibility` and `default_admit_card_rule` use it, so the gate and
+the rule that configures it cannot disagree.
+
+## Admit cards and the public QR card
+
+`admit_card_eligibility` is the single definition, and `issue_admit_card`
+re-checks it inside its own transaction — so the office cannot issue a blocked
+card from a different screen, which is the brief's explicit requirement. With no
+`admit_card_rules` row the card is blocked, not issued: nothing is asserted to
+be satisfied until the office configures it.
+
+`qr_tokens.card_snapshot` is the entire public surface. It holds exactly the
+fields the card's template declares, a trigger refuses the forbidden keys
+regardless of what a template asks for — and that refusal holds even for the
+service role — and the public page renders a deliberate **subset** of it, with
+the guardian's phone number printed on the card but not published. A unique
+partial index allows one live token per student, so issuing a replacement
+revokes the previous card; `issue_qr_token` revokes before it inserts, because
+the index would otherwise refuse the new row.
+
+`generated_documents` is the issue log: what was produced, for whom, by whom
+and when. It deliberately holds no file, because every PDF is generated on
+demand from live data or a frozen snapshot.
 
 ## Fees
 

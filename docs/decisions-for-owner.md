@@ -4,7 +4,7 @@ None of these block the next phase. Each is stored as configuration rather than
 hard-coded, so answering one later is a data change, not a code change. What is
 in place now is a documented default, not a guess presented as policy.
 
-Four already answered:
+Eight already answered:
 
 - **Supabase project** — owner creates it; migrations are written and verified,
   steps are in [`setup.md`](setup.md).
@@ -18,6 +18,13 @@ Four already answered:
   brief's PDF-thumbnail design.
 - **Grade and GPA scale** — confirmed in phase 5; see section 1 below for what
   was settled and the two parts of it still open.
+- **Admit-card fee cutoff** — confirmed in phase 6: fees must be clear through
+  the **exam's own month**. See section 2.
+- **ID card fields and orientation** — confirmed in phase 6: the guardian's
+  number on the front, the school's on the back, and **both** orientations
+  built. See section 4, which also records exactly where that number appears.
+- **Mid-term teacher change** — confirmed in phase 6: the outgoing teacher and
+  their replacement are **each** reviewed. See section 5.
 
 ---
 
@@ -54,21 +61,22 @@ code change, and each exam keeps the scale it was published under.
   to the same exam, which is not the same thing as a retake sitting beside the
   first attempt.
 
-## 2. Admit-card fee window  *(brief 12.2)*
+## 2. Admit-card fee window  *(brief 12.2)*  — **answered**
 
-**Needed by:** phase 6.
+**Confirmed in phase 6 and implemented:** monthly fees must be cleared through
+**the exam's own month**, not the month before. Setting up a new exam's rule
+derives the cutoff from the exam's start date automatically, so the office does
+not have to remember the policy; the row stays editable per exam.
 
-**Current default:** `admit_card_rules` requires monthly fees cleared through a
-configured month plus the exam fee paid, with zero tolerated outstanding, and
-`allow_override = false`.
+**Kept as the brief specifies, both still editable per exam:**
+- **No outstanding amount is tolerated** (`allowed_outstanding = 0`).
+- **Exceptions are off** (`allow_override = false`). Switching them on for one
+  exam then requires an `authority_admin`, a typed reason, and records which
+  checks were overridden; the card itself prints a line saying it was issued by
+  exception.
 
-**Still to confirm:**
-- Through which month must fees be cleared for each exam — the month before the
-  exam, or the exam month itself?
-- Is any outstanding amount tolerated?
-- Is an audited exceptional override permitted at all? It is **off** until you
-  say otherwise. If enabled it requires `authority_admin` and records the
-  overridden checks plus a reason.
+With no rule configured at all, every card for that exam is blocked. That is
+deliberate: nothing is asserted to be satisfied until the office says so.
 
 ## 3. School branding and contact details  *(brief 12.3)*
 
@@ -80,49 +88,79 @@ configured month plus the exam fee paid, with zero tolerated outstanding, and
 **Still to confirm:** real school name, logo file, official email, office
 number, address, and the head teacher's name, title and PNG signature.
 
-## 4. ID card fields  *(brief 12.4)*
+## 4. ID card fields  *(brief 12.4)*  — **answered**
 
-**Needed by:** phase 6. **This one has a privacy consequence**, so it deserves
-the most care.
+**Confirmed in phase 6 and implemented:**
+- **Front:** photo, name (English and Bangla), class, section, roll,
+  registration number, blood group, session, and the **guardian's phone
+  number**.
+- **Back:** school address, the **school office number**, a return-if-found
+  note, and the QR code.
+- **Both orientations** are built at PVC CR80 size — 54 x 85.6 mm portrait and
+  85.6 x 54 mm landscape — and the office picks which template is the default.
 
-Whatever is printed on the card is also what the public QR page shows. The
-database refuses parent names, NIDs, birth certificate numbers, fees, marks and
-attendance in a card snapshot regardless of what is chosen here.
+**Where the guardian's number appears, exactly.** It is printed on the card, so
+whoever finds a lost card can call the guardian directly. It is **not** shown on
+the public `/card/<token>` page: a finder holding the card can read the number
+off the plastic, whereas publishing it on the page would give it to anyone who
+scans the code without ever handling the card — a wider audience than the
+decision was about. If you would rather it appeared there as well, that is one
+field added to that page; say so and it is a small change.
 
-**Still to confirm:**
-- Front fields. Proposed: photo, name, class, section, roll, registration
-  number, blood group, session.
-- Back fields. Proposed: school address, office number, a return-if-found note.
-- **Is an emergency contact number printed?** If yes, it becomes publicly
-  visible to anyone who scans the card. Guardians should be told this before
-  cards are issued.
-- Portrait or landscape.
+What the public page does show: name, registration number, roll, class,
+section, blood group, session, and the school's own email and office number.
 
-## 5. Mid-term teacher change and feedback  *(brief 12.5)*
+The database refuses parent names, NIDs, birth certificate numbers, fees, marks
+and attendance in a card snapshot regardless of what any template asks for, and
+that refusal holds even for the service role.
 
-**Needed by:** phase 6.
+**Still worth knowing:** cards already printed keep whatever is on them.
+Revoking a card kills its QR link immediately; it cannot unprint plastic. So if
+the field list changes, the affected cards need physically replacing.
 
-**Current default:** `feedback_campaigns.min_periods_taught = 1`.
+## 5. Mid-term teacher change and feedback  *(brief 12.5)*  — **answered**
 
-**Still to confirm:**
-- If a teacher changes mid-term, does the student review both, only the current
-  one, or only whoever taught the majority?
-- What is the minimum number of periods before a teacher is reviewable?
+**Confirmed in phase 6 and implemented:** when a teacher changes mid-term, the
+student reviews **both** the outgoing teacher and their replacement, provided
+each taught at least the minimum number of lessons. Form generation walks every
+assignment that overlapped the term rather than only the one in force today, so
+a teacher who left in week three is still reviewed for the lessons they gave.
 
-Assignments are already effective-dated, so either answer is supportable.
+**Minimum lessons taught** defaults to **1** and is set per round on the create
+form. It counts **submitted** lessons only, the same basis as every attendance
+figure in the system: a lesson nobody submitted did not demonstrably happen, so
+it cannot be used to argue a teacher is reviewable.
 
-## 6. Feedback questions and window  *(brief 12.6)*
+A student with no forms — because their teachers taught too few lessons — is
+excluded from the completion figures rather than counted as unfinished, and the
+office screen says how many students that is.
 
-**Needed by:** phase 6.
+## 6. Feedback questions and window  *(brief 12.6)*  — **partly answered**
 
-**Current default:** no questions seeded; the scale defaults to 1–5.
+**Settled in phase 6:** the comment box is **always offered and optional**, and
+only the office can read comments. Teachers cannot read them at any
+aggregation, and nothing records who wrote one.
 
-**Still to confirm:**
-- The 2–3 final rating questions, in English and Bangla.
-- The response scale — 1–5, or 1–10?
-- When does feedback open and close relative to each term's exam?
-- Is the free-text comment box always available, and who may read it? Currently
-  authority only, and teachers can never read it at any aggregation.
+**Still yours to decide — none of it blocks anything:**
+- **The final question wording.** Three are proposed, in English and Bangla,
+  and appear pre-filled and editable on the create-round form:
+  1. Does this teacher explain the lesson clearly? / এই শিক্ষক কি পাঠ স্পষ্টভাবে বুঝিয়ে দেন?
+  2. Can you ask this teacher questions comfortably? / আপনি কি এই শিক্ষককে সহজে প্রশ্ন করতে পারেন?
+  3. Does this teacher start and finish the class on time? / এই শিক্ষক কি সময়মতো ক্লাস শুরু ও শেষ করেন?
+
+  Replace them with whatever the school wants to ask; they are stored with each
+  round, so a later round can ask something different. Two questions or three,
+  your choice — the form supports dropping the third.
+- **The response scale.** 1–5 is the default; 1–10, 1–4 and 1–3 are offered on
+  the same form.
+- **The window.** Each round takes an opens-at and closes-at, both optional —
+  leave them blank and the round is controlled by its status alone. Nothing
+  automatically ties the window to the exam dates yet; the office opens and
+  closes it.
+
+A note worth repeating: in a section where only one or two students answer, an
+average can effectively identify the respondent. The analysis screen flags any
+teacher-question pair with fewer than three responses and says so in words.
 
 A note worth raising: in a section where only one or two students answer, an
 average can effectively identify the respondent. `feedback_analysis()` flags

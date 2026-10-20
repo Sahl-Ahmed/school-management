@@ -331,25 +331,111 @@ proof of payment.
   would have sent and marks the test as sent; no provider is connected and no
   message reaches any phone until phase 7.
 
-## Phase 6 — Feedback, cards, printables
+## Phase 6 — Feedback, cards, printables ✅ done
 
-**Build**
-- Feedback campaigns, target generation from assignments, student submission.
-- Authority analysis with the small-sample flag.
-- Admit-card eligibility surfaced in the portal and the office search.
-- Admit cards (3 per A4), seat tokens, ID cards (PVC, front/back), class PDFs.
-- QR token issue, revoke and reissue.
-- A4 routine PDFs, school-wide and per class.
+**Delivered**
+- Term-specific feedback rounds at `/authority/feedback`: two or three rating
+  questions in English and Bangla, an optional comment, an open/close window,
+  and a minimum-lessons threshold.
+- Form generation from the assignments that **overlapped the term**, so a
+  teacher who changed mid-term and their replacement each get a form — the
+  owner's rule — provided each taught at least the minimum.
+- Student submission at `/student/feedback`, one form per teacher, with the
+  anonymity explained before anything is answered.
+- Authority analysis: per-teacher, per-question averages with a small-sample
+  flag, the anonymous comments, and a named list of who has finished.
+- Admit cards at `/authority/cards` and `/student/documents`, with eligibility
+  from the single shared definition and the reasons spelled out as actions.
+- Admit card PDFs, **three to an A4 sheet**, each carrying the student's
+  details, the subject timetable and a stored seat code.
+- Exam routine PDFs, A4, school-wide or per class.
+- Result sheet PDFs, one A4 page per student, from the frozen snapshot.
+- ID cards at **PVC CR80 size in both orientations**, front and back, with the
+  QR on the back; issue, revoke and reissue, and the public page at
+  `/card/<token>`.
 
-**Done when**
-- A teacher cannot see who said what, at any aggregation.
-- Incomplete feedback or unmet fee rules blocks admit-card issue on every
-  screen, including the office's.
-- A public QR page shows only printed card fields.
-- A revoked token stops resolving and a replacement issues cleanly.
-- A4 and PVC PDFs measure correctly when printed, not just on screen.
+**The owner's four decisions for this phase, and where they live**
+| Decision | Answer | Stored as |
+| --- | --- | --- |
+| Admit-card fee cutoff | Through the **exam's own month** | `admit_card_rules.fees_cleared_through_year/month`, defaulted from `exams.starts_on` |
+| Emergency contact on the ID card | Print the **guardian's number on the front**, the school's on the back | `document_templates.config.front_fields` / `back_fields` |
+| Card orientation | **Both**, the office picks the default | Two `document_templates` rows |
+| Mid-term teacher change | Review **both**, if each taught enough | Target generation walks assignments by date overlap |
 
-**Needs:** decisions 2, 3, 4, 5, 6.
+Outstanding tolerance stays at zero and exceptions stay **off** per exam, both
+as the brief specifies, and both are columns the office can change.
+
+**Where the guardian's phone number does and does not appear**
+It is **printed on the card front**, so whoever finds a lost card can call the
+guardian. It is **not rendered on the public `/card/<token>` page**: a finder
+holding the card reads the number off the plastic, whereas publishing it on the
+page would hand it to anyone who scans the code without ever touching the card.
+The snapshot carries the field because the printed card is generated from it;
+the page renders a deliberate subset. If the school wants it on the page too,
+that is one field added in `src/app/card/[token]/page.tsx`.
+
+**How anonymity is structural, which is the point of this phase**
+- `feedback_responses` and `feedback_comments` have **no student column at
+  all** — not a hidden one, not an encrypted one. A full database dump cannot
+  attribute a rating.
+- Only the **date** is stored on a response, never the time, so submission
+  order cannot be correlated against `feedback_completions`, which does name
+  students.
+- There is **no teacher policy** on either table, and none should ever be
+  added. `feedback_analysis` additionally guards on `app.is_authority()`, so a
+  teacher gets an empty set rather than their own averages.
+- The cost, which the UI states plainly: a submitted rating **cannot be changed
+  or withdrawn**, because nothing records which answers were whose.
+
+**How a blocked admit card stays blocked**
+- `admit_card_eligibility` is the single definition, used by the student
+  portal, the office table and the issue action alike.
+- `issue_admit_card` re-checks it **inside its own transaction**, so the office
+  cannot issue a blocked card from a different screen — the brief's explicit
+  requirement — and a stale URL cannot either.
+- With **no rule configured the card is blocked**, not silently issued.
+- The PDF route checks again and refuses with the reason, because an admit card
+  in a stack is a card an invigilator will accept.
+- Blocked students are **left out** of a class stack, and the count skipped is
+  returned in a header so the office can chase them.
+- An exception requires `authority_admin`, a per-exam `allow_override`, and a
+  reason; it records which checks were overridden, and the card prints a line
+  saying it was issued by exception.
+
+**Verified**
+- 70 new local tests (275 in total offline), including PDF geometry measured in
+  points and millimetres: three cards per A4, CR80 at 54 × 85.6 mm either way,
+  front and back as two pages of identical size.
+- **28 tests against the hosted project** (`tests/remote-documents.test.ts`):
+  a teacher reads no rating, comment, aggregate or completion list; a student
+  reads none either; the office reads all three; the forbidden-key trigger
+  refuses a bad snapshot **even for the service role**; an anonymous caller
+  gets the public card and nothing else; a revoked card stops resolving and a
+  replacement issues cleanly; the office cannot issue a blocked card; office
+  staff cannot approve an exception but an administrator can; and all four PDFs
+  are built from the project's own rows — with a Bangla school name written in
+  for the duration — and measured.
+- Browser walkthrough: created and opened a round, generated its forms,
+  submitted feedback as a student in Bangla and English, watched the admit-card
+  gate release as feedback completed and block on fees, issued an admit card
+  and an ID card from the office, fetched every PDF route over real HTTP as
+  both a student and the office, and read the public QR page.
+
+**Known limitations**
+- No school logo or head teacher's signature image on any printable: decision 3
+  is still open, so there is no file to embed. The signature line is printed
+  for signing by hand.
+- The ID card has no photo unless one was uploaded; the frame prints empty
+  rather than failing.
+- An admit card lists four subjects and then says how many more there are. A
+  class sitting more than four papers needs the exam routine alongside it.
+- The seat code is text on the card, not a scannable barcode.
+- No bulk ID-card sheet: cards are generated one student at a time, because
+  they print on card stock rather than A4.
+- Feedback cannot be reopened for one student; the office reopens the whole
+  round.
+- Comments are not translated or sentiment-scored — they are shown as written.
+- The exam-fee charge is still created by an RPC with no screen of its own.
 
 ## Phase 7 — Library and SMS
 
