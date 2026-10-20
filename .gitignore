@@ -23,6 +23,11 @@ next-env.d.ts
 .env.*.local
 *.pem
 
+# Sign-in details for the demo accounts, written for the owner to read locally.
+# Test accounts on synthetic addresses, but still logins: not for the repo.
+SIGN-IN.local.md
+*.local.md
+
 # supabase local
 supabase/.temp/
 supabase/.branches/

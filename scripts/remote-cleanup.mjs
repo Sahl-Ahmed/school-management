@@ -37,7 +37,29 @@ if (error) {
   process.exit(1);
 }
 
-const targets = data.users.filter((u) => u.email && REMOVABLE.test(u.email));
+/*
+ * Accounts the school owner uses to sign in and look around are tagged
+ * `created_by: "owner-demo"` when they are created, and are never removed here.
+ *
+ * Without this, the sweep would delete the owner's own student and teacher
+ * logins the next time anyone ran the remote tests: those logins must sit on
+ * the synthetic `.invalid` domains, because that is how a registration number
+ * or an employee code maps to an Auth identity.
+ */
+const targets = data.users.filter(
+  (u) =>
+    u.email &&
+    REMOVABLE.test(u.email) &&
+    u.user_metadata?.created_by !== "owner-demo",
+);
+
+const kept = data.users.filter(
+  (u) => u.user_metadata?.created_by === "owner-demo",
+).length;
+
+if (kept > 0) {
+  console.log(`Keeping ${kept} owner demo account(s).`);
+}
 
 if (targets.length === 0) {
   console.log("Nothing to clean up.");
