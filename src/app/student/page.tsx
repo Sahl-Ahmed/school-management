@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "./nav";
@@ -101,9 +102,12 @@ export default async function StudentHome() {
               Attendance
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              Shown here once teachers begin submitting attendance in phase 3.
-              Lessons with no submission are excluded rather than counted as
-              absences.
+              Your month-by-month figures are on the{" "}
+              <Link href={"/student/attendance" as never} className="underline">
+                attendance page
+              </Link>
+              . Lessons no teacher has submitted are excluded rather than
+              counted as absences.
             </p>
           </div>
         </section>
@@ -114,9 +118,9 @@ export default async function StudentHome() {
         >
           <h2 className="text-sm font-semibold">Not built yet</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Attendance detail, published results, teacher feedback, the library
-            and your ID and admit cards arrive in phases 3 through 7, and are
-            greyed out in the navigation above.
+            Teacher feedback, the library, and your ID and admit cards arrive in
+            later phases, and are greyed out in the navigation above. Attendance,
+            fees and results are built and linked there now.
           </p>
         </section>
       </div>

@@ -96,8 +96,10 @@ export default async function TeacherHome() {
         >
           <h2 className="text-sm font-semibold">Not built yet</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Attendance submission, mark entry, class tests and the library land
-            in phases 3, 5 and 7, and are greyed out in the navigation above.
+            The library, and your own attendance and leave, arrive in later
+            phases and are greyed out in the navigation above. Attendance
+            submission, mark entry and class tests are built and linked there
+            now.
           </p>
         </section>
       </div>

@@ -240,22 +240,96 @@ proof of payment.
 - `set_charge_status` supports cancelling as well as waiving, but only waiving
   is wired to a button.
 
-## Phase 5 — Exams, marks, results
+## Phase 5 — Exams, marks, results ✅ done
 
-**Build**
-- Exam configuration: subjects, maximum marks, dates, grading scale.
-- Teacher mark entry for assigned subjects only; submission tracking.
-- Authority view of pending submissions, plus a notification when all are in.
-- Result generation and publication, with the attendance window applied.
-- Extra class tests and the controlled "Send Result to Parents" action.
+**Delivered**
+- Exam configuration at `/authority/exams`: an exam per term, then one row per
+  class per subject with its own maximum, pass mark and date. The subject
+  picker offers only the subjects a class actually studies that year.
+- A five-stage lifecycle — draft, scheduled, marks open, marks closed,
+  published — each stage stating in words what it means for teachers and
+  students. The exam **schedule** publishes separately from the **results**, so
+  students can see dates long before any mark exists.
+- Teacher mark entry at `/teacher/marks`, listing only the subjects the teacher
+  is assigned to teach, and only while the office has entry open.
+- Submission tracking for the office: per class, section and subject, who is
+  assigned, how many marks are in out of the roster, and whether the teacher
+  has submitted.
+- Result generation and publication: totals, subject grades, GPA, overall
+  result, class position and the term's attendance, frozen as a snapshot.
+- Teacher-created extra class tests at `/teacher/class-tests`, with their own
+  marks and a duplicate-guarded "send result" action.
+- Student result views at `/student/results`: earned and maximum marks per
+  subject, grades, points, GPA, overall result, position and term attendance.
+- A grading policy screen at `/authority/grading` for the bands, the subject
+  pass percentage, the pass rule and the GPA convention.
 
-**Done when**
-- Draft marks are invisible to students before publication.
-- A mark above the maximum is refused.
-- Publication writes an immutable snapshot.
-- Clicking "Send Result" twice sends one round of SMS.
+**The grading policy is configuration, and the owner confirmed it**
+- Standard GPA-5 bands, 33% subject pass mark, and **every subject must be
+  passed** to pass the term. A failed term prints GPA 0.00 and the failing
+  grade, per Bangladeshi convention.
+- None of it is in code. The bands live in `grade_bands`; the pass rule, the
+  pass percentage and the GPA convention are columns on `grading_scales`; and
+  each exam records the scale it was published under, so changing the policy
+  later cannot re-grade a past exam. See decision 1 in
+  [decisions-for-owner.md](decisions-for-owner.md) for what is settled and what
+  is still open.
 
-**Needs:** decision 1 (grade scale).
+**How a draft mark stays private, which is the point of this phase**
+- Students hold **no policy at all** on `marks`. There is nothing to leak from,
+  however the page is reached: a student reads results from
+  `published_results`, which only ever contains published rows.
+- A teacher can read and write marks only for a subject they are assigned to
+  teach, and only while the exam is `marks_open` (`app.may_enter_marks`).
+- Publication writes an **immutable snapshot** of every figure. A mark
+  corrected afterwards changes the record but not the sheet a parent already
+  received — verified on the hosted project.
+- Publishing is **administrator-only** and **refuses while any mark is
+  un-entered**. A partial sheet would total wrongly with nothing on it to show
+  that, which is worse than making the office chase the outstanding subject.
+- A blank is not a zero and not an absence: a teacher must give every student a
+  score or tick absent before a subject can be submitted. An absence scores
+  zero but prints as "absent".
+
+**Verified**
+- 39 local tests for exams (205 in total across the offline suite).
+- **23 tests against the hosted project** (`tests/remote-exams.test.ts`) with
+  real sign-ins and real JWTs: a teacher cannot create an exam; entry before
+  `marks_open` is refused; a teacher cannot mark a subject they do not teach,
+  nor a student outside the section, nor above the maximum, nor change
+  submitted marks without a reason; a student cannot read draft marks, not even
+  their own; publishing is refused while marks are missing, refused for office
+  staff who are not administrators, refused for teachers, and refused a second
+  time; the published figures match the confirmed policy to the decimal; a
+  student reads their own sheet and not a classmate's; a teacher sees results
+  only for students they teach; a correction after publication leaves the
+  snapshot untouched; an anonymous caller reaches none of it; and a class test
+  sends exactly once.
+- Hosted browser walkthrough of the whole workflow: created the exam, added two
+  subjects, opened entry, entered Bangla marks as one teacher and Mathematics
+  as another (each seeing only their own subject), was refused an incomplete
+  sheet, recorded an absence, created a class test and sent its result, then
+  published as the administrator and read the resulting sheet as the student.
+
+**Known limitations**
+- No result-sheet PDF yet. The student's sheet is a screen; printing it is
+  phase 6 with the other printables.
+- No notification when every submission is in. The office sees the progress
+  table; nothing is pushed, because notifications are phase 7.
+- Mark entry has no bulk paste or spreadsheet import; marks are typed per
+  student.
+- The authority can enter marks for any subject through the RPC but has no
+  screen for it, so an unassigned subject still needs a teacher assigned.
+- `mark_submissions` carries `reopened_at` and `reopen_reason` for reopening a
+  submitted subject, but no screen uses them: the office reopens by moving the
+  whole exam back to `marks_open`.
+- Terms with no attendance window print no attendance figure. Both exam screens
+  warn about this before publication rather than leaving it to be discovered on
+  a sheet.
+- Class tests do not feed term results, by design, and have no PDF.
+- Result SMS is a **development simulation**. The send action records what it
+  would have sent and marks the test as sent; no provider is connected and no
+  message reaches any phone until phase 7.
 
 ## Phase 6 — Feedback, cards, printables
 
