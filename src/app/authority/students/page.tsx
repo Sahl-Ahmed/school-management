@@ -1,10 +1,27 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
 import { one } from "@/lib/supabase/relations";
+import { Banner, SearchField } from "@/components/form";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  FilterChips,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 
 export const metadata: Metadata = { title: "Students" };
 export const dynamic = "force-dynamic";
@@ -14,19 +31,39 @@ const PAGE_SIZE = 25;
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; class?: string }>;
 }) {
-  const { q = "", page = "1" } = await searchParams;
+  const {
+    q = "",
+    page = "1",
+    class: classParam,
+  } = await searchParams;
   const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
   const from = (pageNumber - 1) * PAGE_SIZE;
 
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // The class filter's own options. A school has a dozen classes, so the
+  // filter is a row of chips rather than a dropdown: one tap, and the chosen
+  // class is visible without opening anything.
+  const { data: classes } = await supabase
+    .from("classes")
+    .select("id, name, level_order")
+    .eq("is_active", true)
+    .order("level_order");
+
+  const activeClass = (classes ?? []).find((c) => c.id === classParam);
 
   // Search by name or registration number. The trigram indexes added in
   // migration 0022 keep the substring match off a sequential scan.
@@ -34,24 +71,37 @@ export default async function StudentsPage({
     .from("students")
     .select(
       `id, registration_no, full_name, gender, photo_path, status,
-       student_enrollments!inner(roll_no, status, classes(name), sections(name))`,
+       student_enrollments!inner(roll_no, status, class_id, classes(name), sections(name))`,
       { count: "exact" },
     )
     .eq("student_enrollments.status", "active")
     .order("full_name")
     .range(from, from + PAGE_SIZE - 1);
 
+  if (activeClass) {
+    query = query.eq("student_enrollments.class_id", activeClass.id);
+  }
+
   const term = q.trim();
   if (term) {
-    query = query.or(
-      `full_name.ilike.%${term}%,registration_no.ilike.%${term}%`,
-    );
+    query = query.or(`full_name.ilike.%${term}%,registration_no.ilike.%${term}%`);
   }
 
   const { data: students, count, error } = await query;
 
   const total = count ?? 0;
   const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const showing = students?.length ?? 0;
+
+  const pageHref = (target: number) => ({
+    pathname: "/authority/students" as Route,
+    query: { q: term || undefined, class: activeClass?.id, page: target },
+  });
+
+  const filterHref = (classId?: string) => ({
+    pathname: "/authority/students" as Route,
+    query: { q: term || undefined, class: classId },
+  });
 
   return (
     <PortalShell
@@ -59,155 +109,172 @@ export default async function StudentsPage({
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-5">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Students</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+      <PageSections>
+        <PageHeader
+          title="Students"
+          meta={
+            <>
               {total} active {total === 1 ? "student" : "students"}
+              {activeClass && ` in ${activeClass.name}`}
               {term && ` matching “${term}”`}
-            </p>
-          </div>
-          <Link
-            href="/authority/students/new"
-            className="rounded-lg px-4 py-2.5 text-sm font-medium text-white"
-            style={{ background: "var(--accent)" }}
-          >
-            Admit a student
-          </Link>
-        </header>
+              {total > PAGE_SIZE && ` · showing ${from + 1}–${from + showing}`}
+            </>
+          }
+          actions={
+            <NavButton href="/authority/students/new" tone="primary" icon="students">
+              Admit a student
+            </NavButton>
+          }
+        />
 
-        <form className="flex gap-2" role="search">
-          <label htmlFor="q" className="sr-only">
-            Search by name or registration number
-          </label>
-          <input
-            id="q"
-            name="q"
-            defaultValue={term}
-            placeholder="Search by name or registration number"
-            className="w-full max-w-sm rounded-lg border px-3 py-2 text-sm"
-            style={{
-              borderColor: "var(--line-hairline)",
-              background: "var(--surface-raised)",
-              color: "var(--text-primary)",
-            }}
-          />
-          <button
-            type="submit"
-            className="rounded-lg border px-4 py-2 text-sm font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
-          >
-            Search
-          </button>
-          {term && (
-            <Link
-              href="/authority/students"
-              className="self-center text-sm underline"
-              style={{ color: "var(--text-muted)" }}
-            >
-              Clear
-            </Link>
+        {/* Search and filter sit together, above the list they act on. */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchField
+              label="Search students by name or registration number"
+              placeholder="Name or registration number"
+              defaultValue={term}
+              hidden={{ class: activeClass?.id }}
+            />
+            {(term || activeClass) && (
+              <Link
+                href="/authority/students"
+                className="text-sm underline"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Clear {term && activeClass ? "search and filter" : term ? "search" : "filter"}
+              </Link>
+            )}
+          </div>
+
+          {(classes ?? []).length > 0 && (
+            <FilterChips
+              label="Filter by class"
+              options={[
+                { href: filterHref(), label: "All classes", active: !activeClass },
+                ...(classes ?? []).map((c) => ({
+                  href: filterHref(c.id),
+                  label: c.name,
+                  active: c.id === activeClass?.id,
+                })),
+              ]}
+            />
           )}
-        </form>
+        </div>
 
         {error ? (
-          <p
-            role="alert"
-            className="rounded-lg px-3 py-2 text-sm"
-            style={{ background: "var(--state-bad-soft)", color: "var(--state-bad)" }}
-          >
-            Could not load students: {error.message}
-          </p>
-        ) : (students?.length ?? 0) === 0 ? (
-          <div
-            className="rounded-xl border p-8 text-center"
-            style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
-          >
-            <p className="text-sm font-medium">
-              {term ? "No students match that search." : "No students admitted yet."}
-            </p>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              {term
-                ? "Check the spelling, or search by registration number instead."
-                : "Admitting a student creates their account and enrolls them in a class."}
-            </p>
-          </div>
+          <Banner tone="error">Could not load students: {error.message}</Banner>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {students!.map((s) => {
-              // PostgREST types embeds as arrays without generated types, and
-              // these are nested two deep, so the shape is named explicitly.
-              type Named = { name: string } | { name: string }[] | null;
-              const enrollment = one<{
-                roll_no: number;
-                classes: Named;
-                sections: Named;
-              }>(s.student_enrollments);
-              const cls = one<{ name: string }>(enrollment?.classes);
-              const sec = one<{ name: string }>(enrollment?.sections);
+          <Card padded={false}>
+            <CardHeader
+              title={activeClass ? `${activeClass.name} roster` : "All active students"}
+              hint="A student is listed from their active enrollment, so a student who has left is not shown."
+            />
 
-              return (
-                <li
-                  key={s.id}
-                  className="rounded-xl border p-4"
-                  style={{
-                    borderColor: "var(--line-hairline)",
-                    background: "var(--surface-raised)",
-                  }}
-                >
-                  <p className="truncate font-medium">{s.full_name}</p>
-                  <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                    <div>
-                      <dt style={{ color: "var(--text-muted)" }}>Registration</dt>
-                      <dd className="numeric">{s.registration_no}</dd>
-                    </div>
-                    <div>
-                      <dt style={{ color: "var(--text-muted)" }}>Roll</dt>
-                      <dd className="numeric">{enrollment?.roll_no ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt style={{ color: "var(--text-muted)" }}>Class</dt>
-                      <dd>
-                        {cls?.name ?? "—"}
-                        {sec?.name ? ` — ${sec.name}` : ""}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt style={{ color: "var(--text-muted)" }}>Photo</dt>
-                      <dd>{s.photo_path ? "On file" : "Not uploaded"}</dd>
-                    </div>
-                  </dl>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+            {showing === 0 ? (
+              <EmptyState
+                icon="students"
+                title={
+                  term
+                    ? "No student matches that search"
+                    : activeClass
+                      ? `No student is enrolled in ${activeClass.name}`
+                      : "No students admitted yet"
+                }
+                action={
+                  term || activeClass ? undefined : (
+                    <NavButton href="/authority/students/new" tone="primary" icon="students">
+                      Admit the first student
+                    </NavButton>
+                  )
+                }
+              >
+                {term
+                  ? "Check the spelling, or search by registration number instead. The search matches any part of a name."
+                  : activeClass
+                    ? "This class exists and has sections, but no active enrollment points at it yet."
+                    : "Admitting a student creates their sign-in and enrolls them in a class."}
+              </EmptyState>
+            ) : (
+              <DataTable
+                caption={
+                  activeClass
+                    ? `Active students in ${activeClass.name}`
+                    : "All active students"
+                }
+                head={
+                  <>
+                    <Th>Name</Th>
+                    <Th>Registration</Th>
+                    <Th align="right">Roll</Th>
+                    <Th>Class</Th>
+                    <Th>Photo</Th>
+                  </>
+                }
+              >
+                {students!.map((s) => {
+                  // PostgREST types embeds as arrays without generated types,
+                  // and these are nested two deep, so the shape is named.
+                  type Named = { name: string } | { name: string }[] | null;
+                  const enrollment = one<{
+                    roll_no: number;
+                    classes: Named;
+                    sections: Named;
+                  }>(s.student_enrollments);
+                  const cls = one<{ name: string }>(enrollment?.classes);
+                  const sec = one<{ name: string }>(enrollment?.sections);
 
-        {lastPage > 1 && (
-          <nav aria-label="Pagination" className="flex items-center gap-3 text-sm">
-            {pageNumber > 1 && (
-              <Link
-                href={{ pathname: "/authority/students", query: { q: term || undefined, page: pageNumber - 1 } }}
-                className="underline"
-              >
-                Previous
-              </Link>
+                  return (
+                    <Tr key={s.id}>
+                      <Td>
+                        <span className="font-medium">{s.full_name}</span>
+                      </Td>
+                      <Td numeric align="left">
+                        {s.registration_no}
+                      </Td>
+                      <Td numeric>{enrollment?.roll_no ?? "—"}</Td>
+                      <Td>
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          {cls?.name ?? "—"}
+                          {sec?.name ? ` — ${sec.name}` : ""}
+                        </span>
+                      </Td>
+                      <Td>
+                        {s.photo_path ? (
+                          <Status tone="good">on file</Status>
+                        ) : (
+                          /*
+                           * Worth saying plainly rather than leaving blank: a
+                           * student with no photo gets an ID card with an empty
+                           * box, and this list is where the office notices.
+                           */
+                          <Status tone="warn">not uploaded</Status>
+                        )}
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </DataTable>
             )}
-            <span style={{ color: "var(--text-muted)" }}>
-              Page {pageNumber} of {lastPage}
-            </span>
-            {pageNumber < lastPage && (
-              <Link
-                href={{ pathname: "/authority/students", query: { q: term || undefined, page: pageNumber + 1 } }}
-                className="underline"
-              >
-                Next
-              </Link>
+
+            {lastPage > 1 && (
+              <CardBody className="flex flex-wrap items-center justify-between gap-3 pt-0">
+                <p className="numeric text-xs" style={{ color: "var(--text-muted)" }}>
+                  Page {pageNumber} of {lastPage}
+                </p>
+                <nav aria-label="Pagination" className="flex items-center gap-2">
+                  {pageNumber > 1 && (
+                    <NavButton href={pageHref(pageNumber - 1)}>Previous</NavButton>
+                  )}
+                  {pageNumber < lastPage && (
+                    <NavButton href={pageHref(pageNumber + 1)}>Next</NavButton>
+                  )}
+                </nav>
+              </CardBody>
             )}
-          </nav>
+          </Card>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

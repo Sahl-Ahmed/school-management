@@ -4,8 +4,17 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
+import type { Route } from "next";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  Card,
+  CardHeader,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import { CampaignCreator, type TermOption } from "./campaign-forms";
 import { one } from "@/lib/supabase/relations";
 
@@ -80,13 +89,12 @@ export default async function AuthorityFeedbackPage() {
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Teacher feedback</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Academic year {year?.name ?? "not set"}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Teacher feedback"
+          meta={`Academic year ${year?.name ?? "not set"}`}
+          description="One round per term, with the questions, who is asked, and whether it holds back admit cards."
+        />
 
         <Banner tone="info">
           Ratings and comments carry no student reference at all — not a hidden
@@ -113,34 +121,29 @@ export default async function AuthorityFeedbackPage() {
           <CampaignCreator academicYearId={year.id} terms={termOptions} />
         )}
 
-        <section
-          className="overflow-hidden"
-          style={{
-            borderRadius: "var(--radius-card)",
-            background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Rounds this year</h2>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Rounds this year"
+            hint="Newest first. The counts are live: forms created, and students who have finished every one of theirs."
+          />
 
           {(campaigns.data ?? []).length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              No feedback rounds yet.
-            </p>
+            <EmptyState icon="feedback" title="No feedback round has been created yet">
+              A round is created above, against a term. Until one is open,
+              students have nothing to fill in and admit cards are not held back
+              by feedback.
+            </EmptyState>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {(campaigns.data ?? []).map((c) => {
                 const n = counts.get(c.id) ?? { forms: 0, finished: 0 };
                 const term = one<{ name: string }>(c.terms)?.name;
 
                 return (
-                  <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+                  <li key={c.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4">
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={`/authority/feedback/${c.id}` as never}
+                        href={`/authority/feedback/${c.id}` as Route}
                         className="text-sm font-semibold underline-offset-2 hover:underline"
                       >
                         {c.name}
@@ -155,22 +158,23 @@ export default async function AuthorityFeedbackPage() {
                     </div>
 
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      {c.blocks_admit_card && <Pill tone="accent">Blocks admit cards</Pill>}
-                      <Pill tone={STATUS_TONE[c.status] ?? "neutral"}>{c.status}</Pill>
-                      <Link
-                        href={`/authority/feedback/${c.id}` as never}
-                        className="text-sm font-medium underline"
-                      >
+                      {c.blocks_admit_card && (
+                        <Status tone="info">holds back admit cards</Status>
+                      )}
+                      <Status tone={STATUS_TONE[c.status] ?? "neutral"} dot>
+                        {c.status}
+                      </Status>
+                      <NavButton href={`/authority/feedback/${c.id}` as Route}>
                         Open
-                      </Link>
+                      </NavButton>
                     </div>
                   </li>
                 );
               })}
             </ul>
           )}
-        </section>
-      </div>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { Banner } from "@/components/form";
 import { RingMeter } from "@/components/charts";
+import {
+  Card,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+} from "@/components/ui";
 import { FeedbackForm, type FeedbackTarget, type Question } from "./feedback-form";
 
 export const metadata: Metadata = { title: "Teacher feedback" };
@@ -61,15 +67,24 @@ export default async function StudentFeedbackPage() {
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Teacher feedback</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {campaign
-              ? `${campaign.name} · open now`
-              : "No feedback round is open at the moment"}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Teacher feedback"
+          meta={
+            campaign
+              ? `${campaign.name} · open now${
+                  campaign.closes_at
+                    ? ` · closes ${new Date(campaign.closes_at).toLocaleDateString("en-GB")}`
+                    : ""
+                }`
+              : "No feedback round is open at the moment"
+          }
+          description={
+            targets.length > 0
+              ? `${done} of ${targets.length} form${targets.length === 1 ? "" : "s"} done.`
+              : undefined
+          }
+        />
 
         {/* Said before anything is answered, not after. */}
         <Banner tone="info">
@@ -80,17 +95,22 @@ export default async function StudentFeedbackPage() {
         </Banner>
 
         {!campaign && (
-          <Banner tone="info">
-            Nothing to do. The school opens a feedback round before each term&apos;s
-            exams, and it will appear here.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="feedback" title="Nothing to do right now">
+              The school opens a feedback round before each term&apos;s exams, and
+              it appears here when it does. Nothing is overdue on your side.
+            </EmptyState>
+          </Card>
         )}
 
         {campaign && targets.length === 0 && (
-          <Banner tone="info">
-            You have no forms in this round. That happens when no teacher has
-            taught your class enough lessons yet for a fair review.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="feedback" title="You have no forms in this round">
+              That happens when no teacher has taught your class enough lessons
+              yet for a fair review. Your admit card is not held back by a form
+              that does not exist.
+            </EmptyState>
+          </Card>
         )}
 
         {campaign && questionRows.length === 0 && targets.length > 0 && (
@@ -101,15 +121,7 @@ export default async function StudentFeedbackPage() {
         )}
 
         {targets.length > 0 && (
-          <section
-            className="p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+          <Card>
             <RingMeter
               value={done}
               denominator={targets.length}
@@ -122,26 +134,27 @@ export default async function StudentFeedbackPage() {
             />
 
             {finished && (
-              <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
-                All done, thank you.{" "}
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                  All done, thank you.
+                  {campaign?.blocks_admit_card &&
+                    " Your admit card is no longer held back by feedback."}
+                </p>
                 {campaign?.blocks_admit_card && (
-                  <>
-                    Your{" "}
-                    <Link href={"/student/documents" as never} className="underline">
-                      admit card
-                    </Link>{" "}
-                    is no longer blocked by feedback.
-                  </>
+                  <NavButton href="/student/documents" tone="primary" icon="card">
+                    Get my admit card
+                  </NavButton>
                 )}
-              </p>
+              </div>
             )}
 
             {!finished && campaign?.blocks_admit_card && (
-              <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
-                Your admit card stays blocked until every form is in.
+              <p className="mt-4 text-sm" style={{ color: "var(--text-secondary)" }}>
+                Your admit card stays held back until every form is in. Teachers
+                never see who answered.
               </p>
             )}
-          </section>
+          </Card>
         )}
 
         {/* Outstanding forms first — the point of the page is to finish them. */}
@@ -158,7 +171,7 @@ export default async function StudentFeedbackPage() {
             ))}
           </div>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

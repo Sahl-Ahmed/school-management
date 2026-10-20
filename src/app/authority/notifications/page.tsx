@@ -4,7 +4,20 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { Pill, StatCard } from "@/components/charts";
+import { StatCard } from "@/components/charts";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 import {
   DailyAttendanceQueuer,
   Dispatcher,
@@ -40,10 +53,10 @@ const TYPE_WORDS: Record<string, string> = {
   custom: "Other",
 };
 
-const STATUS_TONE: Record<string, "good" | "warn" | "bad" | "neutral" | "accent"> = {
+const STATUS_TONE: Record<string, "good" | "warn" | "bad" | "neutral" | "info"> = {
   sent: "good",
   pending: "warn",
-  queued: "accent",
+  queued: "info",
   failed: "bad",
   cancelled: "neutral",
   skipped: "neutral",
@@ -113,61 +126,57 @@ export default async function NotificationsPage() {
     else byType.set(t.type, [t]);
   }
 
-  const cardStyle = {
-    borderRadius: "var(--radius-card)",
-    background: "var(--surface-raised)",
-    border: "1px solid var(--line-hairline)",
-    boxShadow: "var(--shadow-card)",
-  } as const;
-
   return (
     <PortalShell
       portalName="Authority portal"
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Messages, the queue behind them, and what they would cost
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Notifications"
+          meta="Messages, the queue behind them, and what they would cost"
+          description="Every figure below counts real rows in the queue. None of them is a delivery."
+        />
 
         {/* Stated once at the top and again on every outcome, because this is
             the thing most likely to be misread on this page. */}
         <Banner tone="warning">{SIMULATION_BANNER}</Banner>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatCard
             label="Waiting to dispatch"
             value={pending}
             detail="queued or scheduled"
             tone={pending > 0 ? "warn" : "good"}
+            icon="bell"
           />
           <StatCard
             label="Billable segments"
             value={totalSegments}
             detail="across every message ever queued"
             tone="neutral"
+            icon="money"
           />
           <StatCard
             label="Simulated sends"
             value={simulatedSends}
             detail={liveSends > 0 ? `${liveSends} live` : "no live sends at all"}
-            tone="neutral"
+            tone="info"
+            icon="clipboard"
           />
           <StatCard
             label="Failures"
             value={failures}
             detail={failures > 0 ? "see the delivery log" : "none"}
             tone={failures > 0 ? "bad" : "good"}
+            icon="bell"
           />
         </section>
 
         {/* --- queueing ---------------------------------------------------- */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="p-4" style={cardStyle}>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card>
             <DailyAttendanceQueuer
               today={schoolToday()}
               enabled={Boolean(settings.data?.daily_sms_enabled)}
@@ -180,9 +189,9 @@ export default async function NotificationsPage() {
                 are school settings, not fixed in code.
               </p>
             )}
-          </section>
+          </Card>
 
-          <section className="p-4" style={cardStyle}>
+          <Card>
             <ResultQueuer
               exams={(exams.data ?? []).map((e) => ({
                 id: e.id,
@@ -190,113 +199,119 @@ export default async function NotificationsPage() {
                 published: e.results_published_at !== null,
               }))}
             />
-          </section>
+          </Card>
         </div>
 
-        <section className="p-4" style={cardStyle}>
+        <Card>
           <Dispatcher pending={pending} />
-        </section>
+        </Card>
 
         {/* --- the queue --------------------------------------------------- */}
-        <section className="overflow-hidden" style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">The queue, by message type</h2>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-              A simulated dispatch settles as <strong>skipped</strong>, not sent.
-              Nothing here claims a delivery that did not happen.
-            </p>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="The queue, by message type"
+            hint={
+              <>
+                A simulated dispatch settles as <strong>skipped</strong>, not
+                sent. Nothing here claims a delivery that did not happen.
+              </>
+            }
+          />
 
           {rows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              Nothing has been queued yet.
-            </p>
+            <EmptyState icon="bell" title="Nothing has been queued yet">
+              Queue a daily attendance summary or a published result above, and
+              each message appears here with its billable segment count before
+              anything is dispatched.
+            </EmptyState>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">Notification jobs by type and status</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Type</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Status</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Messages</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Segments</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">In Bangla</th>
-                    <th scope="col" className="px-4 py-2 text-right font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={`${r.type}-${r.status}`} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                      <td className="px-4 py-2">{TYPE_WORDS[r.type] ?? r.type}</td>
-                      <td className="px-3 py-2">
-                        <Pill tone={STATUS_TONE[r.status] ?? "neutral"}>{r.status}</Pill>
-                      </td>
-                      <td className="numeric px-3 py-2 text-right">{Number(r.jobs)}</td>
-                      <td className="numeric px-3 py-2 text-right">{Number(r.segments)}</td>
-                      <td className="numeric px-3 py-2 text-right">{Number(r.unicode_jobs)}</td>
-                      <td className="px-4 py-2 text-right">
-                        {(r.status === "pending" || r.status === "queued") && (
-                          <QueueCanceller
-                            type={r.type}
-                            count={pendingByType.get(r.type) ?? 0}
-                          />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              caption="Notification jobs by type and status"
+              head={
+                <>
+                  <Th>Type</Th>
+                  <Th>Status</Th>
+                  <Th align="right">Messages</Th>
+                  <Th align="right">Segments</Th>
+                  <Th align="right">In Bangla</Th>
+                  <Th align="right">Action</Th>
+                </>
+              }
+            >
+              {rows.map((r) => (
+                <Tr key={`${r.type}-${r.status}`}>
+                  <Td>
+                    <span className="font-medium">{TYPE_WORDS[r.type] ?? r.type}</span>
+                  </Td>
+                  <Td>
+                    <Status tone={STATUS_TONE[r.status] ?? "neutral"}>{r.status}</Status>
+                  </Td>
+                  <Td numeric>{Number(r.jobs)}</Td>
+                  <Td numeric>{Number(r.segments)}</Td>
+                  <Td numeric>{Number(r.unicode_jobs)}</Td>
+                  <Td align="right">
+                    {(r.status === "pending" || r.status === "queued") && (
+                      <QueueCanceller
+                        type={r.type}
+                        count={pendingByType.get(r.type) ?? 0}
+                      />
+                    )}
+                  </Td>
+                </Tr>
+              ))}
+            </DataTable>
           )}
-        </section>
+        </Card>
 
         {/* --- the messages themselves ------------------------------------- */}
-        <section className="overflow-hidden" style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Message wording</h2>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-              Edit these freely — they are configuration. The{" "}
-              <code>{"{braces}"}</code> are filled in per student when the
-              message is built.
-            </p>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Message wording"
+            hint={
+              <>
+                Edit these freely — they are configuration. The{" "}
+                <code>{"{braces}"}</code> are filled in per student when the
+                message is built, and the editor shows what each wording costs
+                per message before you save it.
+              </>
+            }
+          />
 
-          <div className="space-y-4 p-4">
+          <CardBody className="space-y-6">
             {[...byType.entries()].map(([type, list]) => (
               <div key={type}>
-                <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+                <h3
+                  className="text-xs font-semibold uppercase tracking-[0.04em]"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   {TYPE_WORDS[type] ?? type}
                 </h3>
-                <div className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+                <div className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
                   {list.map((t) => (
                     <TemplateEditor key={t.id} template={t} />
                   ))}
                 </div>
               </div>
             ))}
-          </div>
-        </section>
+          </CardBody>
+        </Card>
 
         {/* --- recent messages -------------------------------------------- */}
-        <section className="overflow-hidden" style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">
-              Recent messages
-              <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
-                newest first
-              </span>
-            </h2>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Recent messages"
+            hint="Newest first, with the exact text that was built for each guardian. Phone numbers are shown partly masked."
+          />
 
           {(recentJobs.data ?? []).length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              Nothing yet.
-            </p>
+            <EmptyState icon="bell" title="No message has been built yet">
+              Each queued message is rendered in full here, so the office can
+              read what a guardian would receive before anything is dispatched.
+            </EmptyState>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {(recentJobs.data ?? []).map((j) => (
-                <li key={j.id} className="px-4 py-3">
+                <li key={j.id} className="px-5 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                       {TYPE_WORDS[j.type] ?? j.type}
@@ -313,15 +328,15 @@ export default async function NotificationsPage() {
                           {j.is_unicode && " · Bangla"}
                         </span>
                       )}
-                      <Pill tone={STATUS_TONE[j.status] ?? "neutral"}>{j.status}</Pill>
+                      <Status tone={STATUS_TONE[j.status] ?? "neutral"}>{j.status}</Status>
                     </span>
                   </div>
 
-                  {j.body && <p className="mt-1.5 text-sm">{j.body}</p>}
+                  {j.body && <p className="mt-2 text-sm leading-relaxed">{j.body}</p>}
 
                   {j.last_error && (
                     <p
-                      className="mt-1.5 rounded px-2 py-1 text-xs"
+                      className="mt-2 rounded-[var(--radius-data)] px-2.5 py-1.5 text-xs"
                       style={{
                         background: j.status === "failed"
                           ? "var(--state-bad-soft)"
@@ -338,61 +353,67 @@ export default async function NotificationsPage() {
               ))}
             </ul>
           )}
-        </section>
+        </Card>
 
         {/* --- delivery log ----------------------------------------------- */}
-        <section className="overflow-hidden" style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Delivery log</h2>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-              One row per dispatch attempt. <strong>simulate</strong> means
-              nothing was contacted.
-            </p>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Delivery log"
+            hint={
+              <>
+                One row per dispatch attempt. <strong>simulate</strong> means
+                nothing was contacted — no provider, no phone, no charge.
+              </>
+            }
+          />
 
           {(logs.data ?? []).length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              No attempts yet.
-            </p>
+            <EmptyState icon="bell" title="No dispatch has been attempted yet">
+              Running the dispatcher writes one row here per attempt, including
+              the failures, so a message that did not arrive can be traced.
+            </EmptyState>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">SMS delivery attempts</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">When</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Mode</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Status</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Segments</th>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Problem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(logs.data ?? []).map((l) => (
-                    <tr key={l.id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                      <td className="numeric px-4 py-2">
-                        {new Date(l.attempted_at).toLocaleString("en-GB")}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={l.mode === "live" ? "accent" : "neutral"}>{l.mode}</Pill>
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={l.status === "failed" ? "bad" : l.status === "sent" ? "good" : "neutral"}>
-                          {l.status ?? "—"}
-                        </Pill>
-                      </td>
-                      <td className="numeric px-3 py-2 text-right">{l.segments ?? "—"}</td>
-                      <td className="px-4 py-2 text-xs" style={{ color: "var(--state-bad)" }}>
-                        {l.error_message ?? ""}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              caption="SMS delivery attempts"
+              head={
+                <>
+                  <Th>When</Th>
+                  <Th>Mode</Th>
+                  <Th>Status</Th>
+                  <Th align="right">Segments</Th>
+                  <Th>Problem</Th>
+                </>
+              }
+            >
+              {(logs.data ?? []).map((l) => (
+                <Tr key={l.id}>
+                  <Td numeric align="left">
+                    {new Date(l.attempted_at).toLocaleString("en-GB")}
+                  </Td>
+                  <Td>
+                    <Status tone={l.mode === "live" ? "info" : "neutral"}>{l.mode}</Status>
+                  </Td>
+                  <Td>
+                    <Status
+                      tone={
+                        l.status === "failed" ? "bad" : l.status === "sent" ? "good" : "neutral"
+                      }
+                    >
+                      {l.status ?? "—"}
+                    </Status>
+                  </Td>
+                  <Td numeric>{l.segments ?? "—"}</Td>
+                  <Td>
+                    <span className="text-xs" style={{ color: "var(--state-bad)" }}>
+                      {l.error_message ?? ""}
+                    </span>
+                  </Td>
+                </Tr>
+              ))}
+            </DataTable>
           )}
-        </section>
-      </div>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

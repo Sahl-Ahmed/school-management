@@ -28,11 +28,11 @@ export function ExamCreator({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-on-white)" }}>
         <h2 className="text-sm font-semibold">Create a term exam</h2>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
           It starts as a draft. Subjects, mark entry and publishing come after.

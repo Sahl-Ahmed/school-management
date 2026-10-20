@@ -86,11 +86,11 @@ export function BookCreator({ classes }: { classes: ClassOption[] }) {
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-on-white)" }}>
         <h2 className="text-sm font-semibold">Add a book</h2>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
           Put the PDF on Google Drive, share it, then paste the link here.
@@ -222,7 +222,7 @@ export function BookCreator({ classes }: { classes: ClassOption[] }) {
                       background: preset.value,
                       border: active
                         ? "2px solid var(--text-primary)"
-                        : "1px solid var(--line-hairline)",
+                        : "1px solid var(--line-on-white)",
                       outline: active ? "2px solid var(--surface-raised)" : "none",
                       outlineOffset: "-4px",
                     }}
@@ -239,7 +239,7 @@ export function BookCreator({ classes }: { classes: ClassOption[] }) {
                   value={colour}
                   onChange={(e) => setColour(e.target.value)}
                   className="h-8 w-10 cursor-pointer rounded border"
-                  style={{ borderColor: "var(--line-hairline)" }}
+                  style={{ borderColor: "var(--line-on-white)" }}
                   aria-label="Choose any card colour"
                 />
               </label>
@@ -357,7 +357,7 @@ export function ColourChanger({
             background: preset.value,
             border: preset.value.toLowerCase() === colour.toLowerCase()
               ? "2px solid var(--text-primary)"
-              : "1px solid var(--line-hairline)",
+              : "1px solid var(--line-on-white)",
           }}
         >
           <span className="sr-only">{preset.name}</span>
@@ -368,7 +368,7 @@ export function ColourChanger({
         value={colour}
         onChange={(e) => setColour(e.target.value)}
         className="h-6 w-8 cursor-pointer rounded border"
-        style={{ borderColor: "var(--line-hairline)" }}
+        style={{ borderColor: "var(--line-on-white)" }}
         aria-label="Choose any card colour"
       />
       <button type="submit" className="text-xs font-medium underline">Save</button>

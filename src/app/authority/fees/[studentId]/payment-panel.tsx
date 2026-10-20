@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { recordPayment, reversePayment, setChargeStatus, type FeeState } from "../actions";
 import { Field, SelectField, Banner, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 import { taka, periodLabel } from "@/lib/school/money";
 
 export type Charge = {
@@ -103,13 +103,13 @@ export function PaymentPanel({
         style={{
           borderRadius: "var(--radius-card)",
           background: "var(--surface-raised)",
-          border: "1px solid var(--line-hairline)",
+          border: "1px solid var(--line-on-white)",
           boxShadow: "var(--shadow-card)",
         }}
       >
         <h2
           className="px-4 py-3 text-sm font-semibold"
-          style={{ borderBottom: "1px solid var(--line-hairline)" }}
+          style={{ borderBottom: "1px solid var(--line-on-white)" }}
         >
           Charges
           <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
@@ -129,7 +129,7 @@ export function PaymentPanel({
             Nothing billed to this student yet.
           </p>
         ) : (
-          <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+          <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
             {charges.map((c) => {
               const isPayable = c.status === "pending" || c.status === "partial";
               const checked = Boolean(selected[c.charge_id]);
@@ -169,11 +169,11 @@ export function PaymentPanel({
                     </span>
 
                     <span className="shrink-0">
-                      {c.status === "paid" && <Pill tone="good">paid</Pill>}
-                      {c.status === "partial" && <Pill tone="warn">{taka(c.outstanding)} left</Pill>}
-                      {c.status === "pending" && <Pill tone="bad">{taka(c.outstanding)}</Pill>}
-                      {c.status === "waived" && <Pill tone="neutral">waived</Pill>}
-                      {c.status === "cancelled" && <Pill tone="neutral">cancelled</Pill>}
+                      {c.status === "paid" && <Status tone="good">paid</Status>}
+                      {c.status === "partial" && <Status tone="warn">{taka(c.outstanding)} left</Status>}
+                      {c.status === "pending" && <Status tone="bad">{taka(c.outstanding)}</Status>}
+                      {c.status === "waived" && <Status tone="neutral">waived</Status>}
+                      {c.status === "cancelled" && <Status tone="neutral">cancelled</Status>}
                     </span>
                   </div>
 
@@ -191,7 +191,7 @@ export function PaymentPanel({
                         placeholder="Reason for waiving this charge"
                         aria-label={`Reason for waiving ${c.fee_type}`}
                         className="min-w-[14rem] flex-1 rounded border px-2 py-1 text-xs"
-                        style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                        style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                       />
                       <button
                         type="submit"
@@ -218,14 +218,14 @@ export function PaymentPanel({
           style={{
             borderRadius: "var(--radius-card)",
             background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
+            border: "1px solid var(--line-on-white)",
             boxShadow: "var(--shadow-card)",
             display: "block",
           }}
         >
           <h2
             className="px-4 py-3 text-sm font-semibold"
-            style={{ borderBottom: "1px solid var(--line-hairline)" }}
+            style={{ borderBottom: "1px solid var(--line-on-white)" }}
           >
             Record a payment
           </h2>
@@ -272,7 +272,7 @@ export function PaymentPanel({
                       type="button"
                       onClick={() => selectOldest(n)}
                       className="rounded border px-2 py-0.5 font-medium"
-                      style={{ borderColor: "var(--line-hairline)" }}
+                      style={{ borderColor: "var(--line-on-white)" }}
                     >
                       {n === payable.length ? "all" : `oldest ${n}`}
                     </button>
@@ -281,7 +281,7 @@ export function PaymentPanel({
                     type="button"
                     onClick={() => setSelected({})}
                     className="rounded border px-2 py-0.5 font-medium"
-                    style={{ borderColor: "var(--line-hairline)" }}
+                    style={{ borderColor: "var(--line-on-white)" }}
                   >
                     clear
                   </button>
@@ -341,13 +341,13 @@ export function PaymentPanel({
           style={{
             borderRadius: "var(--radius-card)",
             background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
+            border: "1px solid var(--line-on-white)",
             boxShadow: "var(--shadow-card)",
           }}
         >
           <h2
             className="px-4 py-3 text-sm font-semibold"
-            style={{ borderBottom: "1px solid var(--line-hairline)" }}
+            style={{ borderBottom: "1px solid var(--line-on-white)" }}
           >
             Payments
           </h2>
@@ -364,7 +364,7 @@ export function PaymentPanel({
               No payments recorded.
             </p>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {payments.map((p) => (
                 <li key={p.id} className="px-4 py-2.5 text-sm">
                   <div className="flex flex-wrap items-baseline gap-x-2">
@@ -372,7 +372,7 @@ export function PaymentPanel({
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                       {p.method} · {p.paid_at.slice(0, 10)}
                     </span>
-                    {p.reversed_at && <Pill tone="bad">reversed</Pill>}
+                    {p.reversed_at && <Status tone="bad">reversed</Status>}
                     {p.receipt_no && (
                       <a
                         href={`/print/receipt/${p.id}`}
@@ -403,7 +403,7 @@ export function PaymentPanel({
                         placeholder="Reason for reversing"
                         aria-label={`Reason for reversing the payment of ${taka(p.amount)}`}
                         className="min-w-[12rem] flex-1 rounded border px-2 py-1 text-xs"
-                        style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                        style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                       />
                       <button
                         type="submit"

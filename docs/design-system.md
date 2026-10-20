@@ -1,24 +1,65 @@
 # Design system
 
-Owner-specified visual direction, recorded in Phase 2 and binding from Phase 3
-onward. These are requirements, not suggestions: screens built before this was
-written (the login page, the three portal shells, the admission forms) are to be
-brought into line as their phases are revisited.
+Owner-specified visual direction. **Phase 8 replaced the palette**: the
+white-and-green scheme recorded in Phase 2 is superseded by the maroon-and-cream
+one below, and every screen was moved onto it in that phase. Everything else in
+this document — the honesty rules for charts, the library card specification,
+the typography rules — carried over unchanged, because none of it was about
+which colours were used.
+
+These are requirements, not suggestions.
 
 ## 1. Palette and character
 
-**White, green and black are the primary colours.** The product is a **light**
-interface — not a dark theme with a light option, and not a neutral grey
-dashboard.
+The product is a **light** interface — not a dark theme with a light option, and
+not a neutral grey dashboard.
 
-| Role | Use |
+| Role | Token | Value |
+| --- | --- | --- |
+| The page | `--surface` | `#F5EFE1`, a warm cream |
+| A card | `--surface-raised` | `#FFFFFF` |
+| A sunken strip inside a card | `--surface-sunken` | `#FAF6EC` |
+| Primary button, hover, active | `--accent`, `--accent-hover`, `--accent-active` | `#790D16`, `#5E0D14`, `#3A0509` |
+| Body text | `--text-primary` | `#1A1412` |
+| Secondary text | `--text-secondary` | `#4A403C` |
+| Muted text | `--text-muted` | `#6B5F59` |
+
+The structural rule the whole interface follows: **white cards floating on
+cream, maroon confined to the sidebar and to the controls you press.** Painting
+the maroon across the header as well stopped it feeling like a workspace and
+started it feeling like a brochure, which is why the top bar is cream.
+
+### The brand colour is a dark red, so danger is separated by FORM
+
+A maroon primary button and a red destructive button cannot be told apart by
+hue, so they are told apart by shape:
+
+| Meaning | Rendering |
 | --- | --- |
-| White | Page and card backgrounds, the dominant surface |
-| Green | Primary actions, active states, accents, positive indicators |
-| Black (near-black) | Body text, headings, strong borders, high-contrast detail |
+| Primary action | Solid maroon fill, white text |
+| Destructive action | **Outlined** in `--state-bad`, never a solid red slab |
+| Error message | A tinted panel with an icon, never colour alone |
 
-Greys exist only as supporting tones — hairline borders, muted secondary text,
-subtle fills. They are not a third brand colour.
+This is enforced by `SubmitButton`'s `tone` in `src/components/form.tsx` rather
+than left to each screen.
+
+### Measured contrast
+
+Every foreground/background pair in the palette clears WCAG AA, and most clear
+AAA. Measured with the same formula as `src/lib/school/contrast.ts`:
+
+| Pair | Ratio |
+| --- | --- |
+| Body text on cream / on white | 15.9 / 18.2 |
+| Secondary text on cream / on white | 8.8 / 10.1 |
+| Muted text on cream / on white | 5.4 / 6.2 |
+| White on the primary button (default / hover / active) | 11.2 / 13.6 / 17.4 |
+| Maroon text on white / on cream | 11.2 / 9.7 |
+| Each status colour on its own tint | 4.8 – 9.1 |
+| Each chart colour under white text | 5.3 – 6.5 |
+
+The lowest figure in the whole palette is **4.76**, for the steel blue used by
+the `info` tone on its tint. Nothing in the product relies on a pair below AA.
 
 ### Avoid the generic AI look
 
@@ -28,7 +69,10 @@ avoid rather than leaving it to taste:
 - **No purple/indigo-to-pink gradient anything.** No gradient buttons, no
   gradient headers, no gradient text.
 - **No glassmorphism** — no frosted translucent cards floating over a blurred
-  colourful blob.
+  colourful blob. (The sticky top bar and the sticky submit bars do blur what
+  scrolls under them. That is one hairline-separated strip reading as glass over
+  the page beneath it, not a floating card, and it is the only use of blur in
+  the product.)
 - **No emoji as interface iconography.** Icons are drawn, consistent, and
   monochrome unless carrying meaning.
 - **No oversized hero sections** with a centred headline and two buttons on an
@@ -43,14 +87,50 @@ Aim instead for something that looks **deliberately designed for this school**:
 confident typography, generous spacing where it aids reading, tight spacing
 where density helps, and colour used to mean something rather than to decorate.
 
+Phase 8's own reference point was Canva: **neat, spacious, obvious**. What that
+meant in practice was a left sidebar that never moves, one card shape, one
+control shape, generous spacing between sections and tight spacing inside dense
+data, and an interface that says in words what it is showing.
+
 ### Consistency across portals
 
 The Authority, Teacher and Student portals share one visual language: the same
-header, the same card and table styling, the same control shapes, the same
-spacing scale. A student should recognise the product their teacher uses.
+sidebar, the same top bar, the same card and table styling, the same control
+shapes, the same spacing scale. A student should recognise the product their
+teacher uses.
 
 Role is distinguished by **content and navigation only** — never by a different
 colour scheme per portal.
+
+## 1a. Navigation and layout
+
+Every portal has a **left sidebar**, maroon, fixed, with the active page marked
+by a filled white panel and `aria-current`. In a vertical list an underline is
+nearly invisible, and "which page am I on" is the question a sidebar exists to
+answer, so it gets the loudest signal available.
+
+Items are **grouped by what the work is**, not by the order the phases were
+built in:
+
+| Portal | Groups |
+| --- | --- |
+| Authority | Dashboard · People · Day to day · Exams · Communication |
+| Teacher | Today · Teaching · Reference · Me |
+| Student | My profile · My work · My school |
+
+A navigation item with no `href` is **not built yet**: it renders dimmed with a
+note rather than linking to a page that 404s.
+
+Below `lg` the sidebar becomes a drawer opened from the top bar. Two details it
+depends on, both of which were bugs first:
+
+- The drawer is **portalled to `<body>`**. The trigger sits in the frosted top
+  bar, and a `backdrop-filter` makes its element the containing block for any
+  `position: fixed` descendant — so a drawer rendered in place opened as a
+  56-pixel sliver.
+- It is open **only for the route it was opened on**, which closes it on any
+  navigation (including the back button) without an effect that sets state
+  after the fact.
 
 ## 2. Data visualisation
 
@@ -58,8 +138,16 @@ Charts, circular meters and percentage indicators appear throughout: attendance
 percentages, grade distribution, male/female splits, fee clearance, mark
 submission progress.
 
-- Use **tasteful, readable colour** — greens for the positive end of a scale,
-  warm tones for attention, near-black for neutral reference. Not a rainbow.
+- Use **tasteful, readable colour** — green for the positive end of a scale,
+  amber for attention, red for a real problem, steel blue for "adequate", slate
+  for a neutral reference. Not a rainbow.
+- **The brand colour is not a score.** The 75–89% band is steel blue, not
+  maroon: maroon means "the button you press", and reusing it for a middling
+  attendance figure teaches a reader that the brand colour means "adequate",
+  which then makes every primary button look lukewarm.
+- A chart whose categories carry no good/bad meaning (students per class) uses
+  the six-colour `SERIES` palette instead of the status tones, so nobody has to
+  learn that purple means "late".
 - Every chart shows its **denominator and period**. A bare "87%" is not
   acceptable; the brief is explicit that invented or context-free statistics are
   not to be displayed.
@@ -122,8 +210,10 @@ The authority picks each card's background colour.
 - Use relative luminance to decide, and hold the result to at least WCAG AA
   (4.5:1) for the title text. If a chosen colour cannot reach AA with either
   black or white, adjust the shade and say so rather than shipping grey-on-grey.
-- Offer a curated set of defaults that fit the white/green/black palette, with a
-  free colour picker behind it for the authority that wants one.
+- Offer a curated set of defaults, with a free colour picker behind it for the
+  authority that wants one. (The presets predate Phase 8's palette and were left
+  alone: a book's colour is the school's choice of subject coding, not part of
+  the product's own identity.)
 
 ### The Open action
 
@@ -178,17 +268,53 @@ The cancelled columns:
 - Default locale is English with the text layer structured for Bangla, per the
   owner's Phase 1 decision.
 
-## 5. Where this is implemented
+## 5. Writing rules
 
-- Tokens live in `src/app/globals.css` under `@theme` and `:root`.
-- Implemented in Phase 3. `globals.css` now carries the white/green/black
-  palette, a single green hue ramp around 152 degrees, and a light-only
-  `color-scheme` with no dark overrides — this is a light interface by
-  specification, not a dark theme with a light option.
+These came out of Phase 8's audit and are now enforced by the primitives, which
+is cheaper than remembering them:
+
+- **A figure states its period.** `PageHeader` takes `meta`, and most screens
+  put the month or academic year there. "45 lessons awaiting attendance" without
+  "in October 2026" is a figure nobody can act on.
+- **A statistic's label says what was actually counted.** The audit found a
+  dashboard card reading "Classes with a routine: 0 of 12" that was in fact
+  counting sections with attendance activity this month — the label and the
+  measure disagreed, while Class 3 plainly had a timetable.
+- **An empty state says what is missing, why, and what next.** "No data" is not
+  an empty state, it is an apology. A teacher looking at an empty mark sheet
+  needs to know whether they are early, in the wrong place, or waiting on the
+  office.
+- **A validation message says what to do.** "Invalid" tells a clerk nothing.
+- **A form in flight says so.** Every submit reads its own form's pending state,
+  disables, and changes its label, so a slow connection cannot produce a second
+  submission or a frozen-looking page.
+- **A status carries words, never colour alone**, and a table carries a caption.
+
+## 6. Where this is implemented
+
+- Tokens live in `src/app/globals.css` under `@theme` and `:root`: the
+  maroon/cream palette, the status and chart colours, the radius and spacing
+  scale, and a light-only `color-scheme` with no dark overrides — this is a
+  light interface by specification, not a dark theme with a light option.
+- Layout primitives are in `src/components/ui.tsx`: `Card`, `CardHeader`,
+  `PageHeader`, `PageSections`, `DataTable`/`Th`/`Tr`/`Td`, `Status`,
+  `EmptyState`, `FilterChips`, `FieldList`, `Skeleton`, and the button shapes.
+  `DataTable` requires a caption and `StatCard` requires a `detail`, because a
+  required prop is cheaper than a convention.
+- Navigation is `src/components/portal-sidebar.tsx` (desktop column and mobile
+  drawer, sharing one nav renderer so they cannot drift) wrapped by
+  `src/components/portal-shell.tsx`. The per-portal item lists are in
+  `src/app/{authority,teacher,student}/nav.ts`.
+- Icons are 19 inline SVG line icons in `src/components/icon.tsx`, 24×24 on a
+  1.75 stroke, all `aria-hidden`. No icon font, no emoji.
 - Chart primitives live in `src/components/charts.tsx`. `RingMeter`, `BarSeries`
   and `StatCard` all **require** their denominator as a prop, so a figure with
   an invisible basis cannot be rendered, and they say "no data" instead of
   drawing 0%.
-- Shared controls are in `src/components/form.tsx` and
-  `src/components/portal-shell.tsx`. New screens use these rather than
-  restyling inputs locally.
+- Shared controls are in `src/components/form.tsx`. New screens use these rather
+  than restyling inputs locally.
+- Loading states are `src/components/portal-loading.tsx`, rendered by a
+  `loading.tsx` in each portal. Every portal page is `force-dynamic`, so a
+  navigation always waits on the server; the skeleton draws the sidebar too,
+  since the navigation does not depend on the data and making it vanish for the
+  duration of a fetch is a worse flash than the one it replaces.

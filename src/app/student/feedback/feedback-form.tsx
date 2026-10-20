@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { submitFeedback, type FeedbackState } from "./actions";
 import { Banner, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 const initial: FeedbackState = {};
 
@@ -68,7 +68,7 @@ export function FeedbackForm({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
@@ -78,7 +78,7 @@ export function FeedbackForm({
 
       <header
         className="flex flex-wrap items-start justify-between gap-3 px-4 py-3"
-        style={{ borderBottom: "1px solid var(--line-hairline)" }}
+        style={{ borderBottom: "1px solid var(--line-on-white)" }}
       >
         <div>
           <h2 className="text-sm font-semibold">{target.teacher_name}</h2>
@@ -94,7 +94,7 @@ export function FeedbackForm({
             {target.periods_taught === 1 ? "" : "s"} this term
           </p>
         </div>
-        {answered ? <Pill tone="good">Done</Pill> : <Pill tone="warn">To do</Pill>}
+        {answered ? <Status tone="good">Done</Status> : <Status tone="warn">To do</Status>}
       </header>
 
       <div className="space-y-4 p-4">
@@ -150,7 +150,7 @@ export function FeedbackForm({
                             borderRadius: "var(--radius-control)",
                             background: active ? "var(--accent)" : "var(--surface)",
                             color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                            border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
+                            border: `1px solid ${active ? "var(--accent)" : "var(--line-on-white)"}`,
                           }}
                         >
                           <input
@@ -187,7 +187,7 @@ export function FeedbackForm({
                   maxLength={2000}
                   placeholder="Praise or a problem — in English or Bangla"
                   className="w-full rounded-lg border px-3 py-2 text-sm"
-                  style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                  style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                 />
                 <span className="mt-1 block text-xs" style={{ color: "var(--text-muted)" }}>
                   The school office reads comments. Your teacher never does, and

@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { TEACHER_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import { MarkSheet, type MarkRow } from "./mark-sheet";
 import { one } from "@/lib/supabase/relations";
 
@@ -162,14 +168,20 @@ export default async function TeacherMarksPage({
       userName={profile?.full_name ?? "Teacher"}
       nav={TEACHER_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Marks</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {year ? `Academic year ${year.name}` : "No academic year is set"}
-            {" · only subjects you are assigned to teach"}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Marks"
+          meta={
+            year
+              ? `Academic year ${year.name} · only subjects you are assigned to teach`
+              : "No academic year is set"
+          }
+          description={
+            tasks.length > 0
+              ? `${tasks.filter((t) => !t.submitted).length} of ${tasks.length} sheet${tasks.length === 1 ? "" : "s"} still to submit.`
+              : undefined
+          }
+        />
 
         {!teacher.data && (
           <Banner tone="error">
@@ -179,55 +191,73 @@ export default async function TeacherMarksPage({
         )}
 
         {(assignments.data ?? []).length === 0 && teacher.data && (
-          <Banner tone="info">
-            You have no subject assignments this year, so there is nothing to
-            mark. The office sets these through the class routine.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="teachers" title="You have no subject assignments this year">
+              There is nothing for you to mark until the office assigns you a
+              class and subject, which it does through the class routine.
+            </EmptyState>
+          </Card>
         )}
 
         {(openExams ?? []).length === 0 && (assignments.data ?? []).length > 0 && (
-          <Banner tone="info">
-            No exam is open for mark entry. The school office opens entry when it
-            is time, and this page will then list your subjects.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="exam" title="No exam is open for mark entry">
+              The school office opens mark entry when an exam is ready. Your
+              subjects will be listed here as soon as it does — nothing is late
+              on your side.
+            </EmptyState>
+          </Card>
         )}
 
         {(openExams ?? []).length > 0 && tasks.length === 0 && (
-          <Banner tone="info">
-            An exam is open for marks, but none of its subjects match your
-            assignments.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="exam" title="This exam has no subject you teach">
+              An exam is open for marks, but none of its subjects matches your
+              assignments, so no sheet is yours to fill.
+            </EmptyState>
+          </Card>
         )}
 
         {tasks.length > 0 && (
           <>
-            <nav aria-label="Choose a subject to mark" className="overflow-x-auto">
-              <ul className="flex gap-1 pb-1">
+            <nav
+              aria-label="Choose a subject to mark"
+              className="scroll-soft -mx-1 overflow-x-auto px-1"
+            >
+              <ul className="flex gap-2 pb-1">
                 {tasks.map((t) => {
                   const active = t.key === selected?.key;
                   return (
-                    <li key={t.key}>
+                    <li key={t.key} className="shrink-0">
                       <Link
                         href={{ pathname: "/teacher/marks", query: { task: t.key } }}
                         aria-current={active ? "page" : undefined}
-                        className="block whitespace-nowrap px-3 py-2 text-sm"
+                        className={`block min-w-[12rem] whitespace-nowrap px-4 py-3 text-sm transition-colors ${active ? "on-accent" : ""}`}
                         style={{
-                          borderRadius: "var(--radius-control)",
+                          borderRadius: "var(--radius-card)",
                           background: active ? "var(--accent)" : "var(--surface-raised)",
-                          color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                          border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
+                          color: active ? "var(--text-on-accent)" : "var(--text-primary)",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--line-on-white)"}`,
+                          boxShadow: active ? "none" : "var(--shadow-card)",
                         }}
                       >
-                        <span className="block font-medium">{t.subjectName}</span>
+                        <span className="block text-xs opacity-75">{t.examName}</span>
+                        <span className="mt-0.5 block font-semibold">{t.subjectName}</span>
                         <span className="block text-xs opacity-80">
                           {t.className}
-                          {t.sectionName && ` — ${t.sectionName}`} · {t.examName}
+                          {t.sectionName && ` — ${t.sectionName}`}
                         </span>
-                        <span className="mt-1 block">
-                          {t.submitted ? (
-                            <Pill tone={active ? "neutral" : "good"}>Submitted</Pill>
+                        <span className="mt-2 block">
+                          {active ? (
+                            <span className="text-xs font-medium">
+                              {t.submitted ? "Submitted" : "Not submitted"}
+                            </span>
+                          ) : t.submitted ? (
+                            <Status tone="good">submitted</Status>
                           ) : (
-                            <Pill tone={active ? "neutral" : "warn"}>Not submitted</Pill>
+                            <Status tone="warn" dot>
+                              to do
+                            </Status>
                           )}
                         </span>
                       </Link>
@@ -253,7 +283,7 @@ export default async function TeacherMarksPage({
             )}
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

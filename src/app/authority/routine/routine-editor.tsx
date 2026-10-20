@@ -8,7 +8,7 @@ import {
 } from "./actions";
 import { Field, SelectField, Banner, SubmitButton } from "@/components/form";
 import { WEEKDAY_NAMES, hhmm } from "@/components/routine-grid";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 export type PickerOption = { id: string; label: string };
 
@@ -58,13 +58,13 @@ export function RoutineEditor({
         style={{
           borderRadius: "var(--radius-card)",
           background: "var(--surface-raised)",
-          border: "1px solid var(--line-hairline)",
+          border: "1px solid var(--line-on-white)",
           boxShadow: "var(--shadow-card)",
         }}
       >
         <h2
           className="px-4 py-3 text-sm font-semibold"
-          style={{ borderBottom: "1px solid var(--line-hairline)" }}
+          style={{ borderBottom: "1px solid var(--line-on-white)" }}
         >
           Add a period to {sectionLabel}
         </h2>
@@ -170,13 +170,13 @@ export function RoutineEditor({
         style={{
           borderRadius: "var(--radius-card)",
           background: "var(--surface-raised)",
-          border: "1px solid var(--line-hairline)",
+          border: "1px solid var(--line-on-white)",
           boxShadow: "var(--shadow-card)",
         }}
       >
         <h2
           className="px-4 py-3 text-sm font-semibold"
-          style={{ borderBottom: "1px solid var(--line-hairline)" }}
+          style={{ borderBottom: "1px solid var(--line-on-white)" }}
         >
           Scheduled periods
           <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
@@ -195,7 +195,7 @@ export function RoutineEditor({
             Nothing scheduled yet.
           </p>
         ) : (
-          <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+          <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
             {existing.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
                 <div className="min-w-0 flex-1">
@@ -212,7 +212,7 @@ export function RoutineEditor({
                 </div>
 
                 {p.effective_to ? (
-                  <Pill tone="neutral">closed {p.effective_to}</Pill>
+                  <Status tone="neutral">closed {p.effective_to}</Status>
                 ) : (
                   // Closing rather than deleting: past lessons keep their
                   // original teacher, which is the point of effective dating.
@@ -226,7 +226,7 @@ export function RoutineEditor({
                         required
                         className="rounded border px-2 py-1 text-xs"
                         style={{
-                          borderColor: "var(--line-hairline)",
+                          borderColor: "var(--line-on-white)",
                           background: "var(--surface)",
                         }}
                       />

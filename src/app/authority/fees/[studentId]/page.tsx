@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../../nav";
 import { RingMeter, StatCard } from "@/components/charts";
+import { Card, PageHeader, PageSections } from "@/components/ui";
 import { PaymentPanel, type Charge, type PaymentRow } from "./payment-panel";
 import { one } from "@/lib/supabase/relations";
 import { taka } from "@/lib/school/money";
@@ -87,44 +87,35 @@ export default async function StudentFeesPage({
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <nav aria-label="Breadcrumb" className="mb-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            <Link href="/authority/fees" className="underline">Fees</Link>
-            <span aria-hidden="true"> / </span>
-            <span>{student.full_name}</span>
-          </nav>
-          <h1 className="text-xl font-semibold tracking-tight">{student.full_name}</h1>
-          <p className="numeric mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {student.registration_no}
-            {cls?.name && ` · ${cls.name}${sec?.name ? ` — ${sec.name}` : ""}`}
-            {enrollment?.roll_no && ` · roll ${enrollment.roll_no}`}
-            {` · academic year ${year.name}`}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          breadcrumb={{ label: "Fees", href: "/authority/fees" }}
+          title={student.full_name}
+          meta={
+            <>
+              {student.registration_no}
+              {cls?.name && ` · ${cls.name}${sec?.name ? ` — ${sec.name}` : ""}`}
+              {enrollment?.roll_no && ` · roll ${enrollment.roll_no}`}
+              {` · academic year ${year.name}`}
+            </>
+          }
+        />
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            className="sm:col-span-2 p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Card className="col-span-2">
             <RingMeter
               value={collected}
               denominator={billed}
               label="Fees cleared"
               period={`${taka(collected)} of ${taka(billed)} billed`}
             />
-          </div>
+          </Card>
           <StatCard
             label="Outstanding"
             value={taka(outstanding)}
-            detail={`${live.filter((c) => Number(c.outstanding) > 0).length} unpaid charges`}
+            detail={`${live.filter((c) => Number(c.outstanding) > 0).length} unpaid charge${live.filter((c) => Number(c.outstanding) > 0).length === 1 ? "" : "s"}`}
             tone={outstanding > 0 ? "warn" : "good"}
+            icon="money"
           />
           <StatCard
             label="Payments"
@@ -135,6 +126,7 @@ export default async function StudentFeesPage({
                 : "none reversed"
             }
             tone="neutral"
+            icon="clipboard"
           />
         </section>
 
@@ -145,7 +137,7 @@ export default async function StudentFeesPage({
           isAdmin={isAdmin}
           paymentId={randomUUID()}
         />
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

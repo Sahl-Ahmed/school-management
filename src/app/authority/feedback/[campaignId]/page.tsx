@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../../nav";
-import { BarSeries, Pill, RingMeter, StatCard, type BarDatum } from "@/components/charts";
+import { BarSeries, RingMeter, StatCard, type BarDatum } from "@/components/charts";
+import {
+  Card,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  FilterChips,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 import { CampaignStatusControl, TargetGenerator } from "../campaign-forms";
 import { one } from "@/lib/supabase/relations";
 
@@ -103,46 +116,34 @@ export default async function FeedbackCampaignPage({
     else byTeacher.set(row.teacher_id, [row]);
   }
 
-  const cardStyle = {
-    borderRadius: "var(--radius-card)",
-    background: "var(--surface-raised)",
-    border: "1px solid var(--line-hairline)",
-    boxShadow: "var(--shadow-card)",
-  } as const;
-
   return (
     <PortalShell
       portalName="Authority portal"
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <nav aria-label="Breadcrumb" className="text-xs">
-          <Link
-            href={"/authority/feedback" as never}
-            className="underline"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Teacher feedback
-          </Link>
-        </nav>
-
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">{campaign.name}</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+      <PageSections>
+        <PageHeader
+          breadcrumb={{ label: "Teacher feedback", href: "/authority/feedback" }}
+          title={campaign.name}
+          meta={
+            <>
               {one<{ name: string }>(campaign.terms)?.name}
               {campaign.opens_at &&
                 ` · opens ${new Date(campaign.opens_at).toLocaleDateString("en-GB")}`}
               {campaign.closes_at &&
                 ` · closes ${new Date(campaign.closes_at).toLocaleDateString("en-GB")}`}
-            </p>
-          </div>
-          <Pill tone={campaign.status === "open" ? "warn" : "neutral"}>{campaign.status}</Pill>
-        </header>
+            </>
+          }
+          actions={
+            <Status tone={campaign.status === "open" ? "warn" : "neutral"} dot>
+              {campaign.status}
+            </Status>
+          }
+        />
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-2 p-4" style={cardStyle}>
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Card className="col-span-2">
             <RingMeter
               value={finished}
               denominator={owing.length}
@@ -156,69 +157,60 @@ export default async function FeedbackCampaignPage({
                 counted above. Their teachers taught fewer than the minimum lessons.
               </p>
             )}
-          </div>
+          </Card>
           <StatCard
             label="Forms"
             value={forms}
             detail={`across ${owing.length} student${owing.length === 1 ? "" : "s"}`}
             tone="neutral"
+            icon="clipboard"
           />
           <StatCard
             label="Ratings received"
             value={rows.reduce((n, r) => n + Number(r.response_count), 0)}
             detail={`${byTeacher.size} teacher${byTeacher.size === 1 ? "" : "s"} rated`}
-            tone="accent"
+            tone="info"
+            icon="feedback"
           />
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="p-4" style={cardStyle}>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card>
             <CampaignStatusControl campaignId={campaign.id} current={campaign.status} />
-          </section>
-          <section className="p-4" style={cardStyle}>
+          </Card>
+          <Card>
             <TargetGenerator campaignId={campaign.id} formCount={forms} />
-          </section>
+          </Card>
         </div>
 
         {/* --- tabs --------------------------------------------------------- */}
-        <nav aria-label="Choose a view" className="flex flex-wrap gap-1">
-          {[
+        <FilterChips
+          label="Choose a view"
+          options={[
             ["analysis", "Ratings"],
             ["comments", `Comments (${(comments.data ?? []).length})`],
             ["completion", "Who has finished"],
-          ].map(([key, label]) => {
-            const active = show === key;
-            return (
-              <Link
-                key={key}
-                href={{
-                  pathname: `/authority/feedback/${campaign.id}`,
-                  query: { show: key },
-                }}
-                aria-current={active ? "page" : undefined}
-                className="px-3 py-1.5 text-sm font-medium"
-                style={{
-                  borderRadius: "var(--radius-control)",
-                  background: active ? "var(--accent)" : "var(--surface-raised)",
-                  color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                  border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
-                }}
-              >
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+          ].map(([key, label]) => ({
+            href: {
+              pathname: `/authority/feedback/${campaign.id}` as Route,
+              query: { show: key },
+            },
+            label: label!,
+            active: show === key,
+          }))}
+        />
 
         {/* --- ratings ------------------------------------------------------ */}
         {show === "analysis" && (
           <section className="space-y-4">
             {rows.length === 0 ? (
-              <div className="p-8 text-center" style={cardStyle}>
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  No ratings yet.
-                </p>
-              </div>
+              <Card padded={false}>
+                <EmptyState icon="feedback" title="No rating has been submitted yet">
+                  Ratings appear here as students complete their forms. With no
+                  answers in, there is nothing to average — and a zero would be a
+                  measurement, which this is not.
+                </EmptyState>
+              </Card>
             ) : (
               [...byTeacher.entries()].map(([teacherId, teacherRows]) => {
                 const name = teacherRows[0]!.teacher_name;
@@ -232,7 +224,7 @@ export default async function FeedbackCampaignPage({
                     Number(r.average_rating) >= scaleMax * 0.8
                       ? "good"
                       : Number(r.average_rating) >= scaleMax * 0.6
-                        ? "accent"
+                        ? "info"
                         : "warn",
                 }));
 
@@ -241,10 +233,10 @@ export default async function FeedbackCampaignPage({
                 );
 
                 return (
-                  <div key={teacherId} className="p-4" style={cardStyle}>
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <Card key={teacherId}>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-sm font-semibold">{name}</h3>
-                      {small && <Pill tone="warn">Small sample</Pill>}
+                      {small && <Status tone="warn">small sample</Status>}
                     </div>
 
                     <BarSeries
@@ -271,7 +263,7 @@ export default async function FeedbackCampaignPage({
                         it as an impression rather than a measurement.
                       </p>
                     )}
-                  </div>
+                  </Card>
                 );
               })
             )}
@@ -280,24 +272,21 @@ export default async function FeedbackCampaignPage({
 
         {/* --- comments ----------------------------------------------------- */}
         {show === "comments" && (
-          <section style={cardStyle} className="overflow-hidden">
-            <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-              <h2 className="text-sm font-semibold">Comments</h2>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                Anonymous by construction. Only the date is stored, not the time,
-                so the order they arrived in cannot be matched against who
-                finished when.
-              </p>
-            </header>
+          <Card padded={false}>
+            <CardHeader
+              title="Comments"
+              hint="Anonymous by construction. Only the date is stored, not the time, so the order they arrived in cannot be matched against who finished when."
+            />
 
             {(comments.data ?? []).length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                No comments yet.
-              </p>
+              <EmptyState icon="feedback" title="No comment has been written yet">
+                A comment is optional on every form, so a round can finish
+                without any. The ratings view still shows what was scored.
+              </EmptyState>
             ) : (
-              <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+              <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
                 {(comments.data ?? []).map((c) => (
-                  <li key={c.id} className="px-4 py-3">
+                  <li key={c.id} className="px-5 py-4">
                     <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                       About {one<{ full_name: string }>(c.teachers)?.full_name ?? "a teacher"}
                       {one<{ name: string }>(c.subjects)?.name &&
@@ -306,90 +295,90 @@ export default async function FeedbackCampaignPage({
                         ` · section ${one<{ name: string }>(c.sections)!.name}`}
                       {` · ${c.submitted_on}`}
                     </p>
-                    <p className="mt-1.5 whitespace-pre-wrap text-sm">{c.body}</p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">
+                      {c.body}
+                    </p>
                   </li>
                 ))}
               </ul>
             )}
-          </section>
+          </Card>
         )}
 
         {/* --- completion --------------------------------------------------- */}
         {show === "completion" && (
-          <section style={cardStyle} className="overflow-hidden">
-            <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-              <h2 className="text-sm font-semibold">
-                Who has finished
-                <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
-                  unfinished first
-                </span>
-              </h2>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                Names are safe here precisely because this table holds no
-                answers. It says who still owes feedback, which is what blocks an
-                admit card, and nothing about what anyone said.
-              </p>
-            </header>
+          <Card padded={false}>
+            <CardHeader
+              title="Who has finished"
+              hint="Unfinished first. Names are safe here precisely because this table holds no answers: it says who still owes feedback, which is what holds back an admit card, and nothing about what anyone said."
+            />
 
             {completionRows.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                No forms have been generated yet.
-              </p>
+              <EmptyState icon="clipboard" title="No form has been generated yet">
+                Generating forms above works out which teachers taught each
+                student enough lessons to review, and creates one form per pair.
+              </EmptyState>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <caption className="sr-only">Feedback completion by student</caption>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                      <th scope="col" className="px-4 py-2 text-left font-semibold">Student</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Class</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Done</th>
-                      <th scope="col" className="px-4 py-2 text-right font-semibold">State</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...completionRows]
+              <DataTable
+                caption="Feedback completion by student"
+                head={
+                  <>
+                    <Th>Student</Th>
+                    <Th>Class</Th>
+                    <Th align="right">Done</Th>
+                    <Th align="right">State</Th>
+                  </>
+                }
+              >
+                {[...completionRows]
                       .sort(
                         (a, b) =>
                           Number(a.completed_at !== null) - Number(b.completed_at !== null) ||
                           a.class_name.localeCompare(b.class_name) ||
                           a.roll_no - b.roll_no,
                       )
-                      .map((r) => (
-                        <tr key={r.student_id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                          <td className="px-4 py-2">
-                            <span className="block font-medium">{r.full_name}</span>
-                            <span className="numeric block text-xs" style={{ color: "var(--text-muted)" }}>
-                              {r.registration_no} · roll {r.roll_no}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
-                            {r.class_name}
-                            {r.section_name && ` — ${r.section_name}`}
-                          </td>
-                          <td className="numeric px-3 py-2 text-right">
-                            {r.targets_done} / {r.targets_total}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {r.completed_at ? (
-                              <Pill tone="good">Finished</Pill>
-                            ) : r.targets_total === 0 ? (
-                              <Pill tone="neutral">No forms</Pill>
-                            ) : r.targets_done > 0 ? (
-                              <Pill tone="warn">Part done</Pill>
-                            ) : (
-                              <Pill tone="bad">Not started</Pill>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+                  .map((r) => (
+                    <Tr key={r.student_id}>
+                      <Td>
+                        <span className="block font-medium">{r.full_name}</span>
+                        <span
+                          className="numeric block text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {r.registration_no} · roll {r.roll_no}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          {r.class_name}
+                          {r.section_name && ` — ${r.section_name}`}
+                        </span>
+                      </Td>
+                      <Td numeric>
+                        {r.targets_done} / {r.targets_total}
+                      </Td>
+                      <Td align="right">
+                        {r.completed_at ? (
+                          <Status tone="good">finished</Status>
+                        ) : r.targets_total === 0 ? (
+                          <Status tone="neutral">no forms</Status>
+                        ) : r.targets_done > 0 ? (
+                          <Status tone="warn" dot>
+                            part done
+                          </Status>
+                        ) : (
+                          <Status tone="bad" dot>
+                            not started
+                          </Status>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+              </DataTable>
             )}
-          </section>
+          </Card>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

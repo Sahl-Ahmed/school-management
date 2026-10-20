@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { RoutineGrid, type RoutineCell } from "@/components/routine-grid";
-import { Banner } from "@/components/form";
+import {
+  ButtonLink,
+  Card,
+  CardHeader,
+  EmptyState,
+  PageHeader,
+  PageSections,
+} from "@/components/ui";
 import { one } from "@/lib/supabase/relations";
 import { schoolToday } from "@/lib/school/calendar";
 
@@ -67,44 +74,41 @@ export default async function StudentRoutinePage() {
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-5">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">My weekly routine</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              {label} · in effect today
-            </p>
-          </div>
-          {enrollment?.section_id && (
-            <a
-              href={`/print/routine/section/${enrollment.section_id}`}
-              download
-              className="rounded-lg border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: "var(--line-strong)" }}
-            >
-              Download A4 PDF
-            </a>
-          )}
-        </header>
+      <PageSections>
+        <PageHeader
+          title="My weekly routine"
+          meta={`${label} · the periods in effect today`}
+          actions={
+            enrollment?.section_id ? (
+              <ButtonLink
+                href={`/print/routine/section/${enrollment.section_id}`}
+                download
+                icon="calendar"
+              >
+                Download A4 PDF
+              </ButtonLink>
+            ) : undefined
+          }
+        />
 
-        {cells.length === 0 ? (
-          <Banner tone="info">
-            No routine has been published for {label} yet.
-          </Banner>
-        ) : (
-          <section
-            className="overflow-hidden"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            <RoutineGrid cells={cells} weekdays={teachingDays} />
-          </section>
-        )}
-      </div>
+        <Card padded={false}>
+          {cells.length === 0 ? (
+            <EmptyState icon="calendar" title={`No routine for ${label} yet`}>
+              The school office publishes the weekly timetable. Until it does,
+              your lessons are not listed here — ask your class teacher what to
+              expect.
+            </EmptyState>
+          ) : (
+            <>
+              <CardHeader
+                title={label}
+                hint="Non-teaching days are left out entirely, so every column on this grid is a day you attend."
+              />
+              <RoutineGrid cells={cells} weekdays={teachingDays} />
+            </>
+          )}
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

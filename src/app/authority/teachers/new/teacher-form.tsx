@@ -69,7 +69,7 @@ export function TeacherForm({
           <Link
             href="/authority/teachers"
             className="rounded-lg border px-4 py-2.5 text-sm font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
+            style={{ borderColor: "var(--line-on-white)" }}
           >
             Back to teachers
           </Link>
@@ -163,8 +163,12 @@ export function TeacherForm({
 
       {/* Assignments are their own block because the row count varies. */}
       <fieldset
-        className="rounded-xl border p-5"
-        style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
+        className="p-5"
+        style={{
+          borderRadius: "var(--radius-card)",
+          border: "1px solid var(--line-on-white)",
+          background: "var(--surface-raised)",
+        }}
       >
         <legend className="px-2 text-sm font-semibold">Class assignments</legend>
         <p className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -193,7 +197,7 @@ export function TeacherForm({
                     )
                   }
                   className="w-full rounded-lg border px-3 py-2 text-sm"
-                  style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                  style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                 >
                   <option value="">Select…</option>
                   {sections.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -217,7 +221,7 @@ export function TeacherForm({
                     )
                   }
                   className="w-full rounded-lg border px-3 py-2 text-sm"
-                  style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                  style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                 >
                   <option value="">Select…</option>
                   {subjects.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -229,7 +233,7 @@ export function TeacherForm({
                   type="button"
                   onClick={() => setRows((rs) => rs.filter((r) => r.key !== row.key))}
                   className="rounded-lg border px-3 py-2 text-xs"
-                  style={{ borderColor: "var(--line-hairline)" }}
+                  style={{ borderColor: "var(--line-on-white)" }}
                   aria-label={`Remove assignment ${index + 1}`}
                 >
                   Remove
@@ -245,7 +249,7 @@ export function TeacherForm({
             setRows((rs) => [...rs, { key: Date.now(), section_id: "", subject_id: "" }])
           }
           className="mt-3 rounded-lg border px-3 py-1.5 text-xs font-medium"
-          style={{ borderColor: "var(--line-hairline)" }}
+          style={{ borderColor: "var(--line-on-white)" }}
         >
           Add another assignment
         </button>

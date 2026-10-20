@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
 import { Banner } from "@/components/form";
+import {
+  Card,
+  CardHeader,
+  NavButton,
+  PageHeader,
+  PageSections,
+} from "@/components/ui";
 import { BandForm, BandList, RulesForm, type Band, type Scale } from "./grading-forms";
 
 export const metadata: Metadata = { title: "Grading policy" };
@@ -45,27 +51,23 @@ export default async function GradingPage() {
     .select("id", { count: "exact", head: true })
     .not("results_published_at", "is", null);
 
-  const card = {
-    borderRadius: "var(--radius-card)",
-    background: "var(--surface-raised)",
-    border: "1px solid var(--line-hairline)",
-    boxShadow: "var(--shadow-card)",
-  } as const;
-
   return (
     <PortalShell
       portalName="Authority portal"
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Grading policy</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {scale ? scale.name : "No default scale is configured"} · used for every
-            exam published from now on
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Grading policy"
+          meta={`${scale ? scale.name : "No default scale is configured"} · used for every exam published from now on`}
+          description="Bands, the subject pass percentage and the pass rule all live in the database, so a change of school policy needs no new code."
+          actions={
+            <NavButton href="/authority/exams" icon="exam">
+              Exams
+            </NavButton>
+          }
+        />
 
         {!scale && (
           <Banner tone="error">
@@ -86,39 +88,32 @@ export default async function GradingPage() {
 
         {scale && (
           <>
-            <section style={card}>
-              <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                <h2 className="text-sm font-semibold">Pass and GPA rules</h2>
-              </header>
+            <Card padded={false}>
+              <CardHeader
+                title="Pass and GPA rules"
+                hint="These decide whether a student passes and what GPA is printed, and are recorded into every result published afterwards."
+              />
               <RulesForm scale={scale as Scale} />
-            </section>
+            </Card>
 
-            <section style={card}>
-              <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                <h2 className="text-sm font-semibold">Grade bands</h2>
-                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                  A percentage maps to exactly one band. Overlaps are refused by
-                  the database.
-                </p>
-              </header>
+            <Card padded={false}>
+              <CardHeader
+                title="Grade bands"
+                hint="A percentage maps to exactly one band. Overlapping bands are refused by the database, not merely discouraged here."
+              />
               <BandList bands={(bands ?? []) as Band[]} />
-            </section>
+            </Card>
 
-            <section style={card}>
-              <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                <h2 className="text-sm font-semibold">Add or replace a band</h2>
-              </header>
+            <Card padded={false}>
+              <CardHeader
+                title="Add or replace a band"
+                hint="Saving a band whose grade already exists replaces it, so correcting a range does not need a delete first."
+              />
               <BandForm scaleId={scale.id} />
-            </section>
+            </Card>
           </>
         )}
-
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          <Link href={"/authority/exams" as never} className="underline">
-            Back to exams
-          </Link>
-        </p>
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

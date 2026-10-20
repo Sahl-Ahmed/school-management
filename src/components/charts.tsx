@@ -18,7 +18,9 @@
  *     which would read as a real measurement of zero.
  */
 
-export type Tone = "good" | "warn" | "bad" | "neutral" | "accent";
+import { Icon, type IconName } from "@/components/icon";
+
+export type Tone = "good" | "warn" | "bad" | "neutral" | "accent" | "info";
 
 const TONE_VAR: Record<Tone, string> = {
   good: "var(--state-good)",
@@ -26,6 +28,7 @@ const TONE_VAR: Record<Tone, string> = {
   bad: "var(--state-bad)",
   neutral: "var(--state-neutral)",
   accent: "var(--accent)",
+  info: "var(--state-info)",
 };
 
 const TONE_SOFT: Record<Tone, string> = {
@@ -34,15 +37,42 @@ const TONE_SOFT: Record<Tone, string> = {
   bad: "var(--state-bad-soft)",
   neutral: "var(--state-neutral-soft)",
   accent: "var(--accent-soft)",
+  info: "var(--state-info-soft)",
 };
 
 /**
+ * The series palette, for a chart with several unrelated categories.
+ *
+ * Six colours, every one of which clears WCAG AA as a fill under white text AND
+ * as text on either surface — so a bar can be labelled inside itself or beside
+ * itself without a second decision. Defined in globals.css.
+ *
+ * Used where the categories carry no good/bad meaning, such as students per
+ * class. Where they DO carry meaning, use the tones instead: a reader should
+ * never have to learn that purple means "late".
+ */
+export const SERIES = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+] as const;
+
+/**
  * Picks a tone from an attendance-style percentage.
+ *
  * Thresholds are presentation only; no business rule depends on them.
+ *
+ * The 75–89 band is INFO (a steel blue), not the brand maroon. Maroon now means
+ * "the button you press", and reusing it for a middling attendance figure would
+ * teach the reader that the brand colour means "adequate" — which then makes
+ * every primary button look like a lukewarm score.
  */
 export function percentageTone(pct: number): Tone {
   if (pct >= 90) return "good";
-  if (pct >= 75) return "accent";
+  if (pct >= 75) return "info";
   if (pct >= 60) return "warn";
   return "bad";
 }
@@ -107,7 +137,9 @@ export function RingMeter({
           stroke="var(--surface-sunken)"
           strokeWidth={stroke}
         />
-        {hasData && (
+        {/* A zero-length arc with a round cap still paints a dot at twelve
+            o’clock, which reads as "a little bit" rather than as nothing. */}
+        {hasData && dash > 0 && (
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -266,60 +298,54 @@ export function StatCard({
   value,
   detail,
   tone = "accent",
+  icon,
 }: {
   label: string;
   value: string | number;
+  /**
+   * The figure's basis. Required by design: a number without one is exactly
+   * what the brief forbids, so the type makes the caller supply it.
+   */
   detail: string;
   tone?: Tone;
+  icon?: IconName;
 }) {
   return (
     <div
-      className="relative overflow-hidden p-4 pl-5"
+      className="relative overflow-hidden p-4 sm:p-5"
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      {/* A left accent rule instead of a coloured card: keeps the surface white
-          and still codes the figure's kind at a glance. */}
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-1"
-        style={{ background: TONE_VAR[tone] }}
-      />
-      <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        {label}
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-[0.04em]" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </p>
+        {/* A small tinted square instead of a full-bleed accent rule: it codes
+            the figure's kind without the card becoming a coloured block, which
+            is what made a row of four of these read as a traffic light. */}
+        {icon && (
+          <span
+            aria-hidden="true"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--radius-data)]"
+            style={{ background: TONE_SOFT[tone], color: TONE_VAR[tone] }}
+          >
+            <Icon name={icon} size={16} />
+          </span>
+        )}
+      </div>
+
+      <p className="numeric mt-2 text-2xl font-semibold leading-none tracking-tight sm:text-3xl">
+        {value}
       </p>
-      <p className="numeric mt-1 text-2xl font-semibold leading-none">{value}</p>
-      <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+
+      <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
         {detail}
       </p>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-
-/** A small coloured status pill. Always carries text, never colour alone. */
-export function Pill({
-  tone = "neutral",
-  children,
-}: {
-  tone?: Tone;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className="inline-flex items-center whitespace-nowrap px-2 py-0.5 text-xs font-medium"
-      style={{
-        borderRadius: "var(--radius-data)",
-        background: TONE_SOFT[tone],
-        color: TONE_VAR[tone],
-      }}
-    >
-      {children}
-    </span>
-  );
-}

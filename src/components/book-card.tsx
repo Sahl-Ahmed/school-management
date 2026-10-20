@@ -1,5 +1,5 @@
 import { readableOn } from "@/lib/school/contrast";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 /**
  * A library book card, per the revised specification in
@@ -60,7 +60,7 @@ export function BookCard({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
@@ -114,9 +114,9 @@ export function BookCard({
         <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
           <span className="flex flex-wrap gap-1.5">
             {showDraftBadge && book.is_published === false && (
-              <Pill tone="neutral">Draft</Pill>
+              <Status tone="neutral">draft</Status>
             )}
-            {broken && <Pill tone="bad">Link broken</Pill>}
+            {broken && <Status tone="bad">link broken</Status>}
           </span>
 
           {/*
@@ -125,8 +125,12 @@ export function BookCard({
             */}
           {broken ? (
             <span
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium"
-              style={{ borderColor: "var(--line-hairline)", color: "var(--text-muted)" }}
+              className="px-3 py-1.5 text-xs font-medium"
+              style={{
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                color: "var(--text-muted)",
+              }}
             >
               Unavailable
             </span>
@@ -135,8 +139,12 @@ export function BookCard({
               href={book.drive_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-white"
-              style={{ background: "var(--accent)" }}
+              className="px-3.5 py-2 text-xs font-semibold"
+              style={{
+                borderRadius: "var(--radius-control)",
+                background: "var(--accent)",
+                color: "var(--text-on-accent)",
+              }}
             >
               Open
               <span className="sr-only"> {book.title} in Google Drive, opens in a new tab</span>

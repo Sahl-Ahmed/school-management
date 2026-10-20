@@ -5,7 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { RingMeter, BarSeries, StatCard, Pill, type BarDatum } from "@/components/charts";
+import {
+  RingMeter,
+  BarSeries,
+  StatCard,
+  percentageTone,
+  type BarDatum,
+} from "@/components/charts";
+import {
+  Card,
+  DataTable,
+  FieldList,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 import {
   schoolToday,
   monthBounds,
@@ -113,7 +131,7 @@ export default async function StudentAttendancePage({
       label: s.subject_name,
       value: s.present,
       display: pct === null ? "no data" : `${pct}%`,
-      tone: pct === null ? "neutral" : pct >= 90 ? "good" : pct >= 75 ? "accent" : pct >= 60 ? "warn" : "bad",
+      tone: pct === null ? "neutral" : percentageTone(pct),
     };
   });
 
@@ -125,31 +143,46 @@ export default async function StudentAttendancePage({
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">My attendance</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {student.full_name} · {student.registration_no}
-          </p>
-        </header>
-
-        <nav aria-label="Change month" className="flex flex-wrap items-center gap-2 text-sm">
-          <Link
-            href={{ pathname: "/student/attendance", query: { month: addMonths(anchor, -1) } }}
-            className="rounded-lg border px-3 py-1.5 font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
-          >
-            ← {monthLabel(addMonths(anchor, -1))}
-          </Link>
-          <span className="px-2 font-medium">{period}</span>
-          <Link
-            href={{ pathname: "/student/attendance", query: { month: addMonths(anchor, 1) } }}
-            className="rounded-lg border px-3 py-1.5 font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
-          >
-            {monthLabel(addMonths(anchor, 1))} →
-          </Link>
-        </nav>
+      <PageSections>
+        <PageHeader
+          title="My attendance"
+          meta={
+            <>
+              {student.full_name} · {student.registration_no} · {period}
+            </>
+          }
+          actions={
+            /* The month stepper names the months either side rather than
+               saying "previous" and "next", so a tap needs no counting. */
+            <nav
+              aria-label="Change month"
+              className="inline-flex overflow-hidden"
+              style={{
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+              }}
+            >
+              <Link
+                href={{ pathname: "/student/attendance", query: { month: addMonths(anchor, -1) } }}
+                className="px-3 py-2.5 text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                ← {monthLabel(addMonths(anchor, -1))}
+              </Link>
+              <Link
+                href={{ pathname: "/student/attendance", query: { month: addMonths(anchor, 1) } }}
+                className="px-3 py-2.5 text-sm font-medium"
+                style={{
+                  borderLeft: "1px solid var(--line-on-white)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {monthLabel(addMonths(anchor, 1))} →
+              </Link>
+            </nav>
+          }
+        />
 
         {/* The honesty note that the whole attendance model turns on. Shown
             whenever any lesson is outstanding, because otherwise a low
@@ -164,48 +197,34 @@ export default async function StudentAttendancePage({
           </Banner>
         )}
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            className="sm:col-span-2 p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Card className="col-span-2">
             <RingMeter
               value={stats.present}
               denominator={stats.submitted}
               label={`Attendance in ${period}`}
               period={`${stats.submitted} submitted ${stats.submitted === 1 ? "lesson" : "lessons"}`}
             />
-          </div>
+          </Card>
 
           <StatCard
             label="Absent"
             value={stats.absent}
             detail={`of ${stats.submitted} submitted lessons`}
             tone={stats.absent > 0 ? "bad" : "good"}
+            icon="clipboard"
           />
           <StatCard
             label="Late"
             value={stats.late}
             detail="counted as present"
             tone={stats.late > 0 ? "warn" : "neutral"}
+            icon="check"
           />
         </section>
 
         <section className="grid gap-5 lg:grid-cols-2">
-          <div
-            className="p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+          <Card>
             <BarSeries
               data={subjectBars}
               total={stats.submitted}
@@ -213,40 +232,33 @@ export default async function StudentAttendancePage({
               emptyMessage="No attendance submitted for this month yet"
             />
             {bySubject.length > 0 && (
-              <table className="mt-4 w-full border-collapse text-xs">
-                <caption className="sr-only">Attendance by subject</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                    <th scope="col" className="py-1.5 text-left font-medium">Subject</th>
-                    <th scope="col" className="py-1.5 text-right font-medium">Present</th>
-                    <th scope="col" className="py-1.5 text-right font-medium">Absent</th>
-                    <th scope="col" className="py-1.5 text-right font-medium">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div className="mt-5">
+                <DataTable
+                  caption={`Attendance by subject in ${period}`}
+                  head={
+                    <>
+                      <Th>Subject</Th>
+                      <Th align="right">Present</Th>
+                      <Th align="right">Absent</Th>
+                      <Th align="right">Submitted</Th>
+                    </>
+                  }
+                >
                   {bySubject.map((s) => (
-                    <tr key={s.subject_id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                      <td className="py-1.5">{s.subject_name}</td>
-                      <td className="numeric py-1.5 text-right">{s.present}</td>
-                      <td className="numeric py-1.5 text-right">{s.absent}</td>
-                      <td className="numeric py-1.5 text-right">{s.submitted}</td>
-                    </tr>
+                    <Tr key={s.subject_id}>
+                      <Td>{s.subject_name}</Td>
+                      <Td numeric>{s.present}</Td>
+                      <Td numeric>{s.absent}</Td>
+                      <Td numeric>{s.submitted}</Td>
+                    </Tr>
                   ))}
-                </tbody>
-              </table>
+                </DataTable>
+              </div>
             )}
-          </div>
+          </Card>
 
-          <div
-            className="p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            <h2 className="mb-3 text-sm font-medium">
+          <Card>
+            <h2 className="mb-3 text-sm font-semibold">
               Academic year {yearResult.data?.name ?? "—"} so far
             </h2>
             {yearStats ? (
@@ -257,44 +269,50 @@ export default async function StudentAttendancePage({
                   label="Year to date"
                   period={`${yearResult.data?.starts_on} to ${today}`}
                 />
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <dt style={{ color: "var(--text-muted)" }}>Present</dt>
-                    <dd className="numeric font-medium">{yearStats.present}</dd>
-                  </div>
-                  <div>
-                    <dt style={{ color: "var(--text-muted)" }}>Absent</dt>
-                    <dd className="numeric font-medium">{yearStats.absent}</dd>
-                  </div>
-                  <div>
-                    <dt style={{ color: "var(--text-muted)" }}>Excused</dt>
-                    <dd className="numeric font-medium">{yearStats.excused}</dd>
-                  </div>
-                  <div>
-                    <dt style={{ color: "var(--text-muted)" }}>Awaiting submission</dt>
-                    <dd className="numeric font-medium">
-                      {yearStats.unsubmitted_scheduled}{" "}
-                      <Pill tone="neutral">not absence</Pill>
-                    </dd>
-                  </div>
-                </dl>
+                <div className="mt-5">
+                  <FieldList
+                    items={[
+                      { label: "Present", value: yearStats.present, numeric: true },
+                      { label: "Absent", value: yearStats.absent, numeric: true },
+                      { label: "Excused", value: yearStats.excused, numeric: true },
+                      {
+                        label: "Awaiting submission",
+                        value: (
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="numeric">
+                              {yearStats.unsubmitted_scheduled}
+                            </span>
+                            <Status tone="neutral">not absence</Status>
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
               </>
             ) : (
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 No academic year is marked as current.
               </p>
             )}
-          </div>
+          </Card>
         </section>
 
         {monthPct === null && (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-            No attendance has been submitted for {period}, so no percentage can
-            be shown. A percentage of zero would mean you were absent; an empty
-            one means nothing has been recorded.
-          </p>
+          <Card>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              No attendance has been submitted for {period}, so no percentage can
+              be shown. A percentage of zero would mean you were absent; an empty
+              one means nothing has been recorded.
+            </p>
+            <p className="mt-4">
+              <NavButton href="/student/routine" icon="calendar">
+                My routine
+              </NavButton>
+            </p>
+          </Card>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

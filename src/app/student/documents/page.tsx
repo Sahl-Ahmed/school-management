@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  ButtonLink,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import { one } from "@/lib/supabase/relations";
 import { prettyDate } from "@/lib/pdf/base";
 
@@ -81,27 +91,23 @@ export default async function StudentDocumentsPage() {
     .is("revoked_at", null)
     .maybeSingle();
 
-  const cardStyle = {
-    borderRadius: "var(--radius-card)",
-    background: "var(--surface-raised)",
-    border: "1px solid var(--line-hairline)",
-    boxShadow: "var(--shadow-card)",
-  } as const;
-
   return (
     <PortalShell
       portalName="Student portal"
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">ID &amp; admit card</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {student?.full_name}
-            {student?.registration_no && ` · ${student.registration_no}`}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="ID &amp; admit card"
+          meta={
+            <>
+              {student?.full_name}
+              {student?.registration_no && ` · ${student.registration_no}`}
+              {year?.name && ` · academic year ${year.name}`}
+            </>
+          }
+        />
 
         {!student && (
           <Banner tone="error">
@@ -111,15 +117,16 @@ export default async function StudentDocumentsPage() {
         )}
 
         {/* --- ID card ----------------------------------------------------- */}
-        <section style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Student ID card</h2>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Student ID card"
+            hint="Printed at PVC card size. The office issues it; you can download and reprint it whenever you need to."
+          />
 
-          <div className="space-y-3 p-4">
+          <CardBody className="space-y-4">
             {card ? (
               <>
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                   Issued {prettyDate(card.issued_at.slice(0, 10))}. The QR on the
                   back opens a page showing the same details printed on the card,
                   plus the school&apos;s name and contact details — including the
@@ -127,21 +134,17 @@ export default async function StudentDocumentsPage() {
                   it can read. Nothing else about you is published there.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <a
+                  <ButtonLink
                     href={`/print/id-card/${student?.id}?side=both`}
                     download
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-white"
-                    style={{ background: "var(--accent)" }}
+                    tone="primary"
+                    icon="card"
                   >
                     Download card (front &amp; back)
-                  </a>
-                  <a
-                    href={`/card/${card.token}`}
-                    className="rounded-lg border px-4 py-2 text-sm font-medium"
-                    style={{ borderColor: "var(--line-strong)" }}
-                  >
+                  </ButtonLink>
+                  <ButtonLink href={`/card/${card.token}`} icon="profile">
                     View my public card page
-                  </a>
+                  </ButtonLink>
                 </div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   Print at 100%, not &quot;fit to page&quot; — the file is already
@@ -152,34 +155,33 @@ export default async function StudentDocumentsPage() {
             ) : (
               <Banner tone="info">
                 No ID card has been issued to you yet. The school office issues
-                these.
+                these, and it appears here the moment one is.
               </Banner>
             )}
-          </div>
-        </section>
+          </CardBody>
+        </Card>
 
         {/* --- Admit cards -------------------------------------------------- */}
-        <section style={cardStyle}>
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Admit cards</h2>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-              Released once your feedback is complete and your fees are clear for
-              the exam&apos;s month.
-            </p>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Admit cards"
+            hint="Released once your feedback is complete and your fees are clear for the exam&rsquo;s month. The server checks both again at download, so a card you can see is a card you can use."
+          />
 
           {examRows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              No exam schedule has been published yet.
-            </p>
+            <EmptyState icon="card" title="No exam schedule has been published yet">
+              An exam appears here once the school publishes its routine. Your
+              admit card is then released as soon as you meet the conditions
+              above.
+            </EmptyState>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {examRows.map((e) => {
                 const elig = eligibility.get(e.id);
                 const term = one<{ name: string }>(e.terms)?.name;
 
                 return (
-                  <li key={e.id} className="px-4 py-3">
+                  <li key={e.id} className="px-5 py-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{e.name}</p>
@@ -190,61 +192,60 @@ export default async function StudentDocumentsPage() {
                       </div>
 
                       <div className="flex shrink-0 flex-wrap items-center gap-2">
-                        {elig?.overridden && <Pill tone="warn">By exception</Pill>}
+                        {elig?.overridden && <Status tone="warn">by exception</Status>}
                         {elig?.eligible ? (
                           <>
-                            <Pill tone="good">Released</Pill>
-                            <a
+                            <Status tone="good">released</Status>
+                            <ButtonLink
                               href={`/print/admit-card/${e.id}/${student?.id}`}
                               download
-                              className="rounded-lg px-3 py-1.5 text-sm font-medium text-white"
-                              style={{ background: "var(--accent)" }}
+                              tone="primary"
+                              icon="card"
                             >
-                              Download
-                            </a>
+                              Admit card
+                            </ButtonLink>
                           </>
                         ) : (
-                          <Pill tone="bad">Blocked</Pill>
+                          <Status tone="bad" dot>
+                            not released
+                          </Status>
                         )}
 
-                        <a
+                        <ButtonLink
                           href={`/print/exam-routine/${e.id}`}
                           download
-                          className="text-sm font-medium underline"
+                          icon="calendar"
                         >
-                          Exam routine
-                        </a>
+                          Routine
+                        </ButtonLink>
                       </div>
                     </div>
 
                     {/* Reasons, each as something the student can act on. */}
                     {elig && !elig.eligible && (
-                      <ul className="mt-2 space-y-1">
+                      <ul className="mt-3 space-y-2">
                         {elig.blocks.map((block) => (
                           <li
                             key={block}
-                            className="rounded-lg px-3 py-2 text-xs"
+                            className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-xs leading-relaxed"
                             style={{
+                              borderRadius: "var(--radius-control)",
                               background: "var(--state-bad-soft)",
                               color: "var(--state-bad)",
                             }}
                           >
-                            {BLOCK_WORDS[block] ?? block}
+                            <span className="min-w-0 flex-1">
+                              {BLOCK_WORDS[block] ?? block}
+                            </span>
                             {block === "feedback_incomplete" && (
-                              <>
-                                {" "}
-                                <Link href={"/student/feedback" as never} className="underline">
-                                  Go to feedback
-                                </Link>
-                              </>
+                              <NavButton href="/student/feedback" icon="feedback">
+                                Give feedback
+                              </NavButton>
                             )}
                             {block === "monthly_fees_outstanding" && (
-                              <>
-                                {" "}
-                                <Link href={"/student/fees" as never} className="underline">
-                                  See my fees
-                                </Link>
-                              </>
+                              <NavButton href="/student/fees" icon="money">
+                                See my fees
+                              </NavButton>
                             )}
                           </li>
                         ))}
@@ -252,17 +253,16 @@ export default async function StudentDocumentsPage() {
                     )}
 
                     {e.results_published_at && (
-                      <p className="mt-2 text-xs">
-                        <a
+                      <p className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+                        <ButtonLink
                           href={`/print/result/${e.id}?student=${student?.id}`}
                           download
-                          className="font-medium underline"
+                          icon="chart"
                         >
-                          Download result sheet
-                        </a>
+                          Result sheet
+                        </ButtonLink>
                         <span style={{ color: "var(--text-muted)" }}>
-                          {" "}
-                          · published {prettyDate(e.results_published_at.slice(0, 10))}
+                          published {prettyDate(e.results_published_at.slice(0, 10))}
                         </span>
                       </p>
                     )}
@@ -271,8 +271,8 @@ export default async function StudentDocumentsPage() {
               })}
             </ul>
           )}
-        </section>
-      </div>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

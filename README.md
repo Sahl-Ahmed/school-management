@@ -4,7 +4,8 @@ Three role-based portals — **Authority**, **Teacher** and **Student** — over
 connected database, for a school in Bangladesh. Times display in `Asia/Dhaka`;
 amounts are in BDT.
 
-> **Status: phases 1 to 6 complete, phase 7 part done.** The data model,
+> **Status: phases 1 to 6 complete, phase 7 part done, phase 8 (the UI/UX
+> redesign) done.** The data model,
 > permissions, accounts, admission, photo compression and OTP activation; the
 > class routine and teacher-submitted attendance; fee billing, payment entry and
 > receipts; term exams with mark entry, result publication and student results;
@@ -66,9 +67,9 @@ npm run dev
 | [docs/setup.md](docs/setup.md) | Install, Supabase project creation, schema push, first account, troubleshooting |
 | [docs/architecture.md](docs/architecture.md) | Stack and why, the security model, correctness invariants, testing approach |
 | [docs/data-model.md](docs/data-model.md) | All 60 tables, the decisions worth questioning, known gaps |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | The nine phases and what "done" means for each |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | The ten phases and what "done" means for each |
 | [docs/decisions-for-owner.md](docs/decisions-for-owner.md) | Eight open policy decisions, with current defaults |
-| [docs/design-system.md](docs/design-system.md) | Palette, chart rules, and the revised Library card specification |
+| [docs/design-system.md](docs/design-system.md) | The maroon-and-cream palette with its measured contrast, navigation, chart rules, the writing rules, and the revised Library card specification |
 
 ## How it is built
 

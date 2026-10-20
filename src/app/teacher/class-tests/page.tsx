@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { TEACHER_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  Card,
+  EmptyState,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import {
   ClassTestCreator,
   ClassTestSheet,
@@ -125,13 +131,12 @@ export default async function ClassTestsPage({
       userName={profile?.full_name ?? "Teacher"}
       nav={TEACHER_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Class tests</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Your own extra tests{year ? ` · academic year ${year.name}` : ""}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Class tests"
+          meta={`Your own extra tests${year ? ` · academic year ${year.name}` : ""}`}
+          description="A class test is yours, not the school&rsquo;s: it does not affect a term result, and sending its marks to guardians is a simulation until an SMS provider is connected."
+        />
 
         {!year && (
           <Banner tone="error">
@@ -141,10 +146,12 @@ export default async function ClassTestsPage({
         )}
 
         {year && assignmentOptions.length === 0 && (
-          <Banner tone="info">
-            You have no subject assignments this year, so there is no class to
-            test. The office sets these through the class routine.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="teachers" title="You have no subject assignments this year">
+              There is no class for you to test until the office assigns you one,
+              which it does through the class routine.
+            </EmptyState>
+          </Card>
         )}
 
         {year && assignmentOptions.length > 0 && (
@@ -157,30 +164,40 @@ export default async function ClassTestsPage({
 
         {testRows.length > 0 && (
           <>
-            <nav aria-label="Choose a class test" className="overflow-x-auto">
-              <ul className="flex gap-1 pb-1">
+            <nav
+              aria-label="Choose a class test"
+              className="scroll-soft -mx-1 overflow-x-auto px-1"
+            >
+              <ul className="flex gap-2 pb-1">
                 {testRows.map((t) => {
                   const active = t.id === selected?.id;
                   return (
-                    <li key={t.id}>
+                    <li key={t.id} className="shrink-0">
                       <Link
                         href={{ pathname: "/teacher/class-tests", query: { test: t.id } }}
                         aria-current={active ? "page" : undefined}
-                        className="block whitespace-nowrap px-3 py-2 text-sm"
+                        className={`block min-w-[11rem] whitespace-nowrap px-4 py-3 text-sm transition-colors ${active ? "on-accent" : ""}`}
                         style={{
-                          borderRadius: "var(--radius-control)",
+                          borderRadius: "var(--radius-card)",
                           background: active ? "var(--accent)" : "var(--surface-raised)",
-                          color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                          border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
+                          color: active ? "var(--text-on-accent)" : "var(--text-primary)",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--line-on-white)"}`,
+                          boxShadow: active ? "none" : "var(--shadow-card)",
                         }}
                       >
-                        <span className="block font-medium">{t.name}</span>
-                        <span className="numeric block text-xs opacity-80">{t.testDate}</span>
-                        <span className="mt-1 block">
-                          {t.resultSentAt ? (
-                            <Pill tone={active ? "neutral" : "good"}>Sent</Pill>
+                        <span className="numeric block text-xs opacity-75">{t.testDate}</span>
+                        <span className="mt-0.5 block font-semibold">{t.name}</span>
+                        <span className="mt-2 block">
+                          {active ? (
+                            <span className="text-xs font-medium">
+                              {t.resultSentAt ? "Results sent" : "Results not sent"}
+                            </span>
+                          ) : t.resultSentAt ? (
+                            <Status tone="good">sent</Status>
                           ) : (
-                            <Pill tone={active ? "neutral" : "warn"}>Not sent</Pill>
+                            <Status tone="warn" dot>
+                              not sent
+                            </Status>
                           )}
                         </span>
                       </Link>
@@ -202,7 +219,7 @@ export default async function ClassTestsPage({
             )}
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

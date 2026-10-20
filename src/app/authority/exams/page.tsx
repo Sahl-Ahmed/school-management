@@ -4,8 +4,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
+import type { Route } from "next";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import { ExamCreator, type TermOption } from "./exam-creator";
 import { EXAM_STATUS, type ExamStatus } from "./exam-status";
 import { one } from "@/lib/supabase/relations";
@@ -77,14 +87,21 @@ export default async function ExamsPage() {
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Exams</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Academic year {year?.name ?? "not set"}
-            {scale.data && ` · grading on the "${scale.data.name}" scale`}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Exams"
+          meta={
+            <>
+              Academic year {year?.name ?? "not set"}
+              {scale.data && ` · grading on the “${scale.data.name}” scale`}
+            </>
+          }
+          actions={
+            <NavButton href="/authority/grading" icon="grade">
+              Grading policy
+            </NavButton>
+          }
+        />
 
         {!year && (
           <Banner tone="error">
@@ -114,33 +131,20 @@ export default async function ExamsPage() {
           <ExamCreator academicYearId={year.id} terms={termOptions} />
         )}
 
-        <section
-          className="overflow-hidden"
-          style={{
-            borderRadius: "var(--radius-card)",
-            background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <header
-            className="px-4 py-3"
-            style={{ borderBottom: "1px solid var(--line-hairline)" }}
-          >
-            <h2 className="text-sm font-semibold">
-              Exams this year
-              <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
-                most recent first
-              </span>
-            </h2>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Exams this year"
+            hint="Most recent first. An exam moves from draft to scheduled, to marks open, to published — and each step says what it allows."
+          />
 
           {(exams.data ?? []).length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              No exams yet.
-            </p>
+            <EmptyState icon="exam" title="No exam has been created yet">
+              An exam belongs to a term and holds the subjects, maximum marks and
+              dates. Create one above, and teachers will see their mark sheets as
+              soon as you open entry.
+            </EmptyState>
           ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {(exams.data ?? []).map((e) => {
                 const status = EXAM_STATUS[e.status as ExamStatus];
                 const term = one<{ name: string }>(e.terms)?.name;
@@ -148,11 +152,11 @@ export default async function ExamsPage() {
                 return (
                   <li
                     key={e.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4"
                   >
                     <div className="min-w-0 flex-1">
                       <Link
-                        href={`/authority/exams/${e.id}` as never}
+                        href={`/authority/exams/${e.id}` as Route}
                         className="text-sm font-semibold underline-offset-2 hover:underline"
                       >
                         {e.name}
@@ -167,30 +171,32 @@ export default async function ExamsPage() {
                     </div>
 
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      {e.routine_published_at && <Pill tone="accent">Routine visible</Pill>}
-                      <Pill tone={status?.tone ?? "neutral"}>{status?.label ?? e.status}</Pill>
-                      <Link
-                        href={`/authority/exams/${e.id}` as never}
-                        className="text-sm font-medium underline"
-                      >
+                      {e.routine_published_at && (
+                        <Status tone="info">routine visible</Status>
+                      )}
+                      <Status tone={status?.tone ?? "neutral"} dot>
+                        {status?.label ?? e.status}
+                      </Status>
+                      <NavButton href={`/authority/exams/${e.id}` as Route}>
                         Open
-                      </Link>
+                      </NavButton>
                     </div>
                   </li>
                 );
               })}
             </ul>
           )}
-        </section>
 
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Grading bands and the pass rule are configuration, not code.{" "}
-          <Link href={"/authority/grading" as never} className="underline">
-            Review the grading policy
-          </Link>
-          .
-        </p>
-      </div>
+          <CardBody className="pt-0">
+            <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Grading bands and the pass rule are configuration, not code
+              — they are set on the grading policy page and recorded into each
+              published result, so changing them later never rewrites a result
+              already issued.
+            </p>
+          </CardBody>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

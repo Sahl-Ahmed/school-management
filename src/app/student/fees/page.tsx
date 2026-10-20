@@ -4,7 +4,20 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { RingMeter, StatCard, Pill } from "@/components/charts";
+import {
+  ButtonLink,
+  Card,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
+import { RingMeter, StatCard } from "@/components/charts";
 import { taka, periodLabel } from "@/lib/school/money";
 import { one } from "@/lib/supabase/relations";
 
@@ -86,118 +99,123 @@ export default async function StudentFeesPage() {
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">My fees</h1>
-          <p className="numeric mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {student.full_name} · {student.registration_no} · academic year {year.name}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="My fees"
+          meta={
+            <>
+              {student.full_name} · {student.registration_no} · academic year{" "}
+              {year.name}
+            </>
+          }
+          description="The school office takes payments in person; this page is the record of what has been billed and received."
+        />
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            className="sm:col-span-2 p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Card className="col-span-2">
             <RingMeter
               value={collected}
               denominator={billed}
               label="Fees cleared"
               period={`${taka(collected)} of ${taka(billed)}`}
             />
-          </div>
+          </Card>
           <StatCard
             label="Still to pay"
             value={taka(outstanding)}
-            detail={`${live.filter((c) => Number(c.outstanding) > 0).length} unpaid charges`}
+            detail={`${live.filter((c) => Number(c.outstanding) > 0).length} unpaid charge${live.filter((c) => Number(c.outstanding) > 0).length === 1 ? "" : "s"}`}
             tone={outstanding > 0 ? "warn" : "good"}
+            icon="money"
           />
           <StatCard
             label="Payments received"
             value={(payments ?? []).filter((p) => !p.reversed_at).length}
             detail="receipts available below"
             tone="neutral"
+            icon="clipboard"
           />
         </section>
 
-        <section
-          className="overflow-hidden"
-          style={{
-            borderRadius: "var(--radius-card)",
-            background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <h2
-            className="px-4 py-3 text-sm font-semibold"
-            style={{ borderBottom: "1px solid var(--line-hairline)" }}
-          >
-            Month by month
-          </h2>
+        <Card padded={false}>
+          <CardHeader
+            title="Month by month"
+            hint="Every charge for this academic year, newest period first. A waived or cancelled charge is shown but is not money owed."
+          />
 
           {rows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              Nothing has been billed yet.
-            </p>
+            <EmptyState icon="money" title="Nothing has been billed yet">
+              Monthly fees appear here as soon as the office generates them for
+              your class. Nothing is overdue until it is billed.
+            </EmptyState>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">Fee charges by period</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Period</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Fee</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Amount</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Paid</th>
-                    <th scope="col" className="px-4 py-2 text-right font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((c) => (
-                    <tr
-                      key={c.charge_id}
-                      style={{ borderBottom: "1px solid var(--line-hairline)" }}
-                    >
-                      <td className="px-4 py-2 font-medium">
-                        {periodLabel(c.period_year, c.period_month, c.exam_name)}
-                        {c.due_on && (
-                          <span
-                            className="numeric ml-2 text-xs font-normal"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            due {c.due_on}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
-                        {c.fee_type}
-                      </td>
-                      <td className="numeric px-3 py-2 text-right">{taka(c.amount)}</td>
-                      <td className="numeric px-3 py-2 text-right">{taka(c.amount_paid)}</td>
-                      <td className="px-4 py-2 text-right">
-                        {c.status === "paid" && <Pill tone="good">cleared</Pill>}
-                        {c.status === "partial" && (
-                          <Pill tone="warn">{taka(c.outstanding)} left</Pill>
-                        )}
-                        {c.status === "pending" && (
-                          <Pill tone="bad">{taka(c.outstanding)} due</Pill>
-                        )}
-                        {c.status === "waived" && <Pill tone="neutral">waived</Pill>}
-                        {c.status === "cancelled" && <Pill tone="neutral">cancelled</Pill>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              caption="Fee charges by period"
+              head={
+                <>
+                  <Th>Period</Th>
+                  <Th>Fee</Th>
+                  <Th align="right">Amount</Th>
+                  <Th align="right">Paid</Th>
+                  <Th align="right">Status</Th>
+                </>
+              }
+              foot={
+                <Tr>
+                  <Td colSpan={2}>
+                    <span className="font-semibold">Total owed</span>
+                  </Td>
+                  <Td numeric>
+                    <span className="font-semibold">{taka(billed)}</span>
+                  </Td>
+                  <Td numeric>
+                    <span className="font-semibold">{taka(collected)}</span>
+                  </Td>
+                  <Td align="right">
+                    {outstanding > 0 ? (
+                      <Status tone="warn">{taka(outstanding)} due</Status>
+                    ) : (
+                      <Status tone="good">all cleared</Status>
+                    )}
+                  </Td>
+                </Tr>
+              }
+            >
+              {rows.map((c) => (
+                <Tr key={c.charge_id}>
+                  <Td>
+                    <span className="font-medium">
+                      {periodLabel(c.period_year, c.period_month, c.exam_name)}
+                    </span>
+                    {c.due_on && (
+                      <span
+                        className="numeric block text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        due {c.due_on}
+                      </span>
+                    )}
+                  </Td>
+                  <Td>
+                    <span style={{ color: "var(--text-secondary)" }}>{c.fee_type}</span>
+                  </Td>
+                  <Td numeric>{taka(c.amount)}</Td>
+                  <Td numeric>{taka(c.amount_paid)}</Td>
+                  <Td align="right">
+                    {c.status === "paid" && <Status tone="good">cleared</Status>}
+                    {c.status === "partial" && (
+                      <Status tone="warn">{taka(c.outstanding)} left</Status>
+                    )}
+                    {c.status === "pending" && (
+                      <Status tone="bad">{taka(c.outstanding)} due</Status>
+                    )}
+                    {c.status === "waived" && <Status tone="neutral">waived</Status>}
+                    {c.status === "cancelled" && <Status tone="neutral">cancelled</Status>}
+                  </Td>
+                </Tr>
+              ))}
+            </DataTable>
           )}
-        </section>
+        </Card>
 
         {waived.length > 0 && (
           <Banner tone="info">
@@ -208,50 +226,38 @@ export default async function StudentFeesPage() {
         )}
 
         {(payments ?? []).length > 0 && (
-          <section
-            className="overflow-hidden"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            <h2
-              className="px-4 py-3 text-sm font-semibold"
-              style={{ borderBottom: "1px solid var(--line-hairline)" }}
-            >
-              Receipts
-            </h2>
-            <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+          <Card padded={false}>
+            <CardHeader
+              title="Receipts"
+              hint="Every payment the office has recorded, newest first. A reversed payment is kept on the record rather than deleted."
+            />
+            <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
               {(payments ?? []).map((p) => {
                 const receipt = one<{ receipt_no: string }>(p.receipts);
                 return (
                   <li
                     key={p.id}
-                    className="flex flex-wrap items-baseline gap-x-3 px-4 py-2.5 text-sm"
+                    className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3.5 text-sm"
                   >
-                    <span className="numeric font-medium">{taka(p.amount)}</span>
+                    <span className="numeric font-semibold">{taka(p.amount)}</span>
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                       {p.method} · {p.paid_at.slice(0, 10)}
                     </span>
-                    {p.reversed_at && <Pill tone="bad">reversed</Pill>}
+                    {p.reversed_at && <Status tone="bad">reversed</Status>}
                     {receipt?.receipt_no && !p.reversed_at && (
-                      <a
-                        href={`/print/receipt/${p.id}`}
-                        download
-                        className="numeric ml-auto text-xs underline"
-                      >
-                        Download {receipt.receipt_no}
-                      </a>
+                      <span className="ml-auto">
+                        <ButtonLink href={`/print/receipt/${p.id}`} download icon="clipboard">
+                          <span className="numeric">{receipt.receipt_no}</span>
+                        </ButtonLink>
+                      </span>
                     )}
                   </li>
                 );
               })}
             </ul>
-          </section>
+          </Card>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

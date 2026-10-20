@@ -211,7 +211,7 @@ dashes and curly quotes.
 
 ## 8. K40 terminal and the on-site PC  *(brief 12.8)*
 
-**Needed by:** phase 8. **Cannot be completed without the physical device.**
+**Needed by:** phase 9. **Cannot be completed without the physical device.**
 
 **Still to confirm:**
 - Exact firmware version on the unit, and whether it speaks the standard ZKTeco

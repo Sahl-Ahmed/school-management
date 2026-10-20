@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
 import { LibraryBrowser, type BrowserBook } from "@/components/library-browser";
+import { ButtonLink, Card, PageHeader, PageSections } from "@/components/ui";
 import { one } from "@/lib/supabase/relations";
 
 export const metadata: Metadata = { title: "Library" };
@@ -83,30 +84,26 @@ export default async function StudentLibraryPage({
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-5">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Library</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              {showAll
-                ? `Everything in the library · ${published.length} book${published.length === 1 ? "" : "s"}`
-                : `For your class · ${forMe.length} book${forMe.length === 1 ? "" : "s"}`}
-            </p>
-          </div>
-
-          {/* Only offered when there is actually something else to see. */}
-          {otherCount > 0 && (
-            <a
-              href={showAll ? "/student/library" : "/student/library?all=1"}
-              className="rounded-lg border px-3 py-1.5 text-sm font-medium"
-              style={{ borderColor: "var(--line-strong)" }}
-            >
-              {showAll
-                ? "Show only my class"
-                : `Show all classes (${otherCount} more)`}
-            </a>
-          )}
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Library"
+          meta={
+            showAll
+              ? `Everything in the library · ${published.length} book${published.length === 1 ? "" : "s"}`
+              : `For your class · ${forMe.length} book${forMe.length === 1 ? "" : "s"}`
+          }
+          actions={
+            /* Only offered when there is actually something else to see. */
+            otherCount > 0 ? (
+              <ButtonLink
+                href={showAll ? "/student/library" : "/student/library?all=1"}
+                icon="book"
+              >
+                {showAll ? "Only my class" : `All classes (${otherCount} more)`}
+              </ButtonLink>
+            ) : undefined
+          }
+        />
 
         <LibraryBrowser
           basePath="/student/library"
@@ -122,12 +119,14 @@ export default async function StudentLibraryPage({
           }
         />
 
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Books open in Google Drive in a new tab. If one says it is
-          unavailable, the school already knows the link is broken and will
-          replace it.
-        </p>
-      </div>
+        <Card>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            Books open in Google Drive in a new tab. If one says it is
+            unavailable, the school already knows the link is broken and will
+            replace it — you do not need to report it.
+          </p>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

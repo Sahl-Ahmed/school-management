@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import type { Route } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
 import { RoutineGrid, type RoutineCell } from "@/components/routine-grid";
 import { RoutineEditor, type PickerOption } from "./routine-editor";
 import { Banner } from "@/components/form";
+import {
+  ButtonLink,
+  Card,
+  CardHeader,
+  FilterChips,
+  PageHeader,
+  PageSections,
+} from "@/components/ui";
 import { one } from "@/lib/supabase/relations";
 import { schoolToday } from "@/lib/school/calendar";
 
@@ -95,38 +103,30 @@ export default async function RoutinePage({
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Class routine</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              Academic year {year.data?.name ?? "not set"} · teaching days only
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {/* A route handler returning a PDF file, so a plain anchor and a
-                download attribute — not a client-side navigation. */}
-            <a
-              href="/print/routine/school"
-              download
-              className="rounded-lg border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: "var(--line-strong)" }}
-            >
-              School-wide A4 PDF
-            </a>
-            {selectedSection && (
-              <a
-                href={`/print/routine/section/${selectedSection}`}
-                download
-                className="rounded-lg px-3 py-2 text-sm font-medium"
-                style={{ background: "var(--accent)", color: "var(--text-on-accent)" }}
-              >
-                This class A4 PDF
-              </a>
-            )}
-          </div>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Class routine"
+          meta={`Academic year ${year.data?.name ?? "not set"} · teaching days only`}
+          actions={
+            <>
+              {/* Route handlers returning a PDF file, so plain anchors with a
+                  download attribute — not client-side navigations. */}
+              <ButtonLink href="/print/routine/school" download icon="calendar">
+                Whole school PDF
+              </ButtonLink>
+              {selectedSection && (
+                <ButtonLink
+                  href={`/print/routine/section/${selectedSection}`}
+                  download
+                  tone="primary"
+                  icon="calendar"
+                >
+                  This class PDF
+                </ButtonLink>
+              )}
+            </>
+          }
+        />
 
         {!year.data ? (
           <Banner tone="error">
@@ -139,50 +139,26 @@ export default async function RoutinePage({
           <>
             {/* Section picker as links, so the choice is shareable and
                 bookmarkable rather than trapped in component state. */}
-            <nav aria-label="Choose a class" className="overflow-x-auto">
-              <ul className="flex gap-1 pb-1">
-                {sectionOptions.map((s) => {
-                  const active = s.id === selectedSection;
-                  return (
-                    <li key={s.id}>
-                      <Link
-                        href={{ pathname: "/authority/routine", query: { section: s.id } }}
-                        aria-current={active ? "page" : undefined}
-                        className="block whitespace-nowrap px-3 py-1.5 text-sm font-medium"
-                        style={{
-                          borderRadius: "var(--radius-control)",
-                          background: active ? "var(--accent)" : "var(--surface-raised)",
-                          color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                          border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
-                        }}
-                      >
-                        {s.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+            <FilterChips
+              label="Choose a class"
+              options={sectionOptions.map((s) => ({
+                href: { pathname: "/authority/routine" as Route, query: { section: s.id } },
+                label: s.label,
+                active: s.id === selectedSection,
+              }))}
+            />
 
-            <section
-              className="overflow-hidden"
-              style={{
-                borderRadius: "var(--radius-card)",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--line-hairline)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <h2 className="px-4 py-3 text-sm font-semibold"
-                  style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                {currentLabel}
-              </h2>
+            <Card padded={false}>
+              <CardHeader
+                title={currentLabel}
+                hint={`${cells.length} period${cells.length === 1 ? "" : "s"} on the grid. A closed period is still shown, with the date it stopped, because the office needs to see what it closed.`}
+              />
               <RoutineGrid
                 cells={cells}
                 weekdays={teachingDays}
                 emptyMessage={`No periods scheduled for ${currentLabel} yet. Add one below.`}
               />
-            </section>
+            </Card>
 
             <RoutineEditor
               academicYearId={year.data.id}
@@ -209,7 +185,7 @@ export default async function RoutinePage({
             />
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { Banner } from "@/components/form";
+import { PageHeader, PageSections } from "@/components/ui";
 import { TeacherForm, type Option } from "./teacher-form";
 import { AUTHORITY_NAV } from "../../nav";
 import { one } from "@/lib/supabase/relations";
@@ -55,15 +55,13 @@ export default async function NewTeacherPage() {
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <nav aria-label="Breadcrumb" className="mb-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            <Link href="/authority/teachers" className="underline">Teachers</Link>
-            <span aria-hidden="true"> / </span>
-            <span>Add</span>
-          </nav>
-          <h1 className="text-xl font-semibold tracking-tight">Add a teacher</h1>
-        </header>
+      <PageSections>
+        <PageHeader
+          breadcrumb={{ label: "Teachers", href: "/authority/teachers" }}
+          title="Add a teacher"
+          meta={year.data ? `Assignments for academic year ${year.data.name}` : undefined}
+          description="This creates the teacher record and, optionally, their sign-in and their class assignments. Assignments decide what they can reach."
+        />
 
         {!year.data ? (
           <Banner tone="error">
@@ -78,7 +76,7 @@ export default async function NewTeacherPage() {
             devices={deviceOptions}
           />
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

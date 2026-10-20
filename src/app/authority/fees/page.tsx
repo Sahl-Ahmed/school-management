@@ -4,8 +4,23 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../nav";
-import { Banner } from "@/components/form";
-import { RingMeter, StatCard, Pill } from "@/components/charts";
+import type { Route } from "next";
+import { Banner, SearchField } from "@/components/form";
+import { RingMeter, StatCard } from "@/components/charts";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  FilterChips,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 import { ChargeGenerator, type FeeTypeOption } from "./charge-generator";
 import { schoolToday, monthLabel } from "@/lib/school/calendar";
 import { taka } from "@/lib/school/money";
@@ -79,6 +94,8 @@ export default async function FeesPage({
   const outstanding = rows.reduce((n, r) => n + Number(r.outstanding), 0);
   const withArrears = rows.filter((r) => Number(r.outstanding) > 0).length;
 
+  const activeClass = (classes.data ?? []).find((c) => c.id === classParam);
+
   const monthlyTypes: FeeTypeOption[] = (feeTypes.data ?? [])
     .filter((t) => t.is_monthly)
     .map((t) => ({ id: t.id, label: `${t.name} (${t.code})` }));
@@ -89,13 +106,16 @@ export default async function FeesPage({
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Fees</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Academic year {year?.name ?? "not set"} · figures cover the whole year to date
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Fees"
+          meta={`Academic year ${year?.name ?? "not set"} · figures cover the whole year to date`}
+          description={
+            activeClass
+              ? `Filtered to ${activeClass.name}.`
+              : undefined
+          }
+        />
 
         {!year && (
           <Banner tone="error">
@@ -106,16 +126,8 @@ export default async function FeesPage({
 
         {year && (
           <>
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div
-                className="sm:col-span-2 p-4"
-                style={{
-                  borderRadius: "var(--radius-card)",
-                  background: "var(--surface-raised)",
-                  border: "1px solid var(--line-hairline)",
-                  boxShadow: "var(--shadow-card)",
-                }}
-              >
+            <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              <Card className="col-span-2">
                 <RingMeter
                   value={collected}
                   denominator={billed}
@@ -123,18 +135,20 @@ export default async function FeesPage({
                   period={`${taka(collected)} of ${taka(billed)} billed`}
                   unit="%"
                 />
-              </div>
+              </Card>
               <StatCard
                 label="Outstanding"
                 value={taka(outstanding)}
                 detail={`${withArrears} of ${rows.length} students owe something`}
                 tone={outstanding > 0 ? "warn" : "good"}
+                icon="money"
               />
               <StatCard
                 label="Students billed"
                 value={rows.length}
-                detail={classParam ? "in the selected class" : "across all classes"}
+                detail={activeClass ? `in ${activeClass.name}` : "across all classes"}
                 tone="neutral"
+                icon="students"
               />
             </section>
 
@@ -148,153 +162,117 @@ export default async function FeesPage({
             />
 
             {/* Collection list, worst first — the point is who to chase. */}
-            <section
-              className="overflow-hidden"
-              style={{
-                borderRadius: "var(--radius-card)",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--line-hairline)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-                style={{ borderBottom: "1px solid var(--line-hairline)" }}
-              >
-                <h2 className="text-sm font-semibold">
-                  Collection
-                  <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
-                    most owed first
-                  </span>
-                </h2>
-
-                <form className="flex flex-wrap gap-2" role="search">
-                  {classParam && <input type="hidden" name="class" value={classParam} />}
-                  <label htmlFor="q" className="sr-only">
-                    Search by name or registration number
-                  </label>
-                  <input
-                    id="q"
-                    name="q"
-                    defaultValue={q}
+            <Card padded={false}>
+              <CardHeader
+                title="Collection"
+                hint="Most owed first, so the students to chase are at the top. Figures are for the whole academic year to date."
+                actions={
+                  <SearchField
+                    label="Search students by name or registration number"
                     placeholder="Name or registration number"
-                    className="rounded-lg border px-3 py-1.5 text-sm"
-                    style={{
-                      borderColor: "var(--line-hairline)",
-                      background: "var(--surface)",
-                    }}
+                    defaultValue={q}
+                    hidden={{ class: classParam }}
                   />
-                  <button
-                    type="submit"
-                    className="rounded-lg border px-3 py-1.5 text-sm font-medium"
-                    style={{ borderColor: "var(--line-strong)" }}
-                  >
-                    Search
-                  </button>
-                </form>
-              </div>
+                }
+              />
 
-              <nav aria-label="Filter by class" className="overflow-x-auto px-4 py-2">
-                <ul className="flex gap-1">
-                  <li>
-                    <Link
-                      href={{ pathname: "/authority/fees", query: q ? { q } : {} }}
-                      aria-current={!classParam ? "page" : undefined}
-                      className="block whitespace-nowrap px-2.5 py-1 text-xs font-medium"
-                      style={{
-                        borderRadius: "var(--radius-data)",
-                        background: !classParam ? "var(--accent)" : "transparent",
-                        color: !classParam ? "var(--text-on-accent)" : "var(--text-muted)",
-                      }}
-                    >
-                      All classes
-                    </Link>
-                  </li>
-                  {(classes.data ?? []).map((c) => {
-                    const active = c.id === classParam;
-                    return (
-                      <li key={c.id}>
-                        <Link
-                          href={{
-                            pathname: "/authority/fees",
-                            query: { class: c.id, ...(q ? { q } : {}) },
-                          }}
-                          aria-current={active ? "page" : undefined}
-                          className="block whitespace-nowrap px-2.5 py-1 text-xs font-medium"
-                          style={{
-                            borderRadius: "var(--radius-data)",
-                            background: active ? "var(--accent)" : "transparent",
-                            color: active ? "var(--text-on-accent)" : "var(--text-muted)",
-                          }}
-                        >
-                          {c.name}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
+              <CardBody className="py-3">
+                <FilterChips
+                  label="Filter by class"
+                  options={[
+                    {
+                      href: { pathname: "/authority/fees" as Route, query: { q: q || undefined } },
+                      label: "All classes",
+                      active: !classParam,
+                    },
+                    ...(classes.data ?? []).map((c) => ({
+                      href: {
+                        pathname: "/authority/fees" as Route,
+                        query: { class: c.id, q: q || undefined },
+                      },
+                      label: c.name,
+                      active: c.id === classParam,
+                    })),
+                  ]}
+                />
+              </CardBody>
 
               {rows.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                  {q ? "No students match that search." : "No students are billed yet."}
-                </p>
+                <EmptyState
+                  icon="money"
+                  title={
+                    q
+                      ? "No student matches that search"
+                      : activeClass
+                        ? `No student in ${activeClass.name} is billed yet`
+                        : "No student is billed yet"
+                  }
+                >
+                  {q
+                    ? "Check the spelling, or search by registration number instead."
+                    : "Generating monthly charges above bills every enrolled student at once, and the figures here follow from it."}
+                </EmptyState>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-sm">
-                    <caption className="sr-only">Fee collection by student</caption>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                        <th scope="col" className="px-4 py-2 text-left font-semibold">Student</th>
-                        <th scope="col" className="px-3 py-2 text-left font-semibold">Class</th>
-                        <th scope="col" className="px-3 py-2 text-right font-semibold">Billed</th>
-                        <th scope="col" className="px-3 py-2 text-right font-semibold">Collected</th>
-                        <th scope="col" className="px-3 py-2 text-right font-semibold">Outstanding</th>
-                        <th scope="col" className="px-4 py-2 text-right font-semibold">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r) => (
-                        <tr key={r.student_id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                          <td className="px-4 py-2">
-                            <span className="block font-medium">{r.full_name}</span>
-                            <span className="numeric block text-xs" style={{ color: "var(--text-muted)" }}>
-                              {r.registration_no} · roll {r.roll_no}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
-                            {r.class_name}
-                            {r.section_name && ` — ${r.section_name}`}
-                          </td>
-                          <td className="numeric px-3 py-2 text-right">{taka(r.billed)}</td>
-                          <td className="numeric px-3 py-2 text-right">{taka(r.collected)}</td>
-                          <td className="px-3 py-2 text-right">
-                            {Number(r.outstanding) > 0 ? (
-                              <Pill tone={Number(r.unpaid_months) > 2 ? "bad" : "warn"}>
-                                {taka(r.outstanding)}
-                              </Pill>
-                            ) : (
-                              <Pill tone="good">clear</Pill>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            <Link
-                              href={`/authority/fees/${r.student_id}` as never}
-                              className="text-sm font-medium underline"
-                            >
-                              Open
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  caption="Fee collection by student, most owed first"
+                  head={
+                    <>
+                      <Th>Student</Th>
+                      <Th>Class</Th>
+                      <Th align="right">Billed</Th>
+                      <Th align="right">Collected</Th>
+                      <Th align="right">Outstanding</Th>
+                      <Th align="right">Action</Th>
+                    </>
+                  }
+                >
+                  {rows.map((r) => (
+                    <Tr key={r.student_id}>
+                      <Td>
+                        <span className="block font-medium">{r.full_name}</span>
+                        <span
+                          className="numeric block text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {r.registration_no} · roll {r.roll_no}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          {r.class_name}
+                          {r.section_name && ` — ${r.section_name}`}
+                        </span>
+                      </Td>
+                      <Td numeric>{taka(r.billed)}</Td>
+                      <Td numeric>{taka(r.collected)}</Td>
+                      <Td align="right">
+                        {Number(r.outstanding) > 0 ? (
+                          <Status tone={Number(r.unpaid_months) > 2 ? "bad" : "warn"}>
+                            {taka(r.outstanding)}
+                            {Number(r.unpaid_months) > 0 &&
+                              ` · ${r.unpaid_months} month${Number(r.unpaid_months) === 1 ? "" : "s"}`}
+                          </Status>
+                        ) : (
+                          <Status tone="good">clear</Status>
+                        )}
+                      </Td>
+                      <Td align="right">
+                        <Link
+                          href={`/authority/fees/${r.student_id}` as Route}
+                          className="text-sm font-medium"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          Take payment
+                        </Link>
+                      </Td>
+                    </Tr>
+                  ))}
+                </DataTable>
               )}
-            </section>
+            </Card>
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

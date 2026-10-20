@@ -66,7 +66,7 @@ export function DailyAttendanceQueuer({
           max={today}
           onChange={(e) => setDate(e.target.value)}
           className="rounded-lg border px-3 py-2 text-sm"
-          style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+          style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
         />
       </label>
 
@@ -150,7 +150,7 @@ export function Dispatcher({ pending }: { pending: number }) {
                   borderRadius: "var(--radius-control)",
                   background: active ? "var(--accent)" : "var(--surface)",
                   color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                  border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
+                  border: `1px solid ${active ? "var(--accent)" : "var(--line-on-white)"}`,
                 }}
               >
                 <input
@@ -259,7 +259,7 @@ export function TemplateEditor({ template }: { template: TemplateRow }) {
         rows={3}
         maxLength={900}
         className="w-full rounded-lg border px-3 py-2 text-sm"
-        style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+        style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
         aria-label={`${template.name} message text`}
       />
 

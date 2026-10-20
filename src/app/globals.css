@@ -3,19 +3,30 @@
 /* ===========================================================================
    Design tokens — see docs/design-system.md
    ---------------------------------------------------------------------------
-   White, green and black. A LIGHT interface by specification: not a dark theme
-   with a light option, so `color-scheme: light` is declared and there are no
-   dark-mode overrides. Native form controls and scrollbars therefore render
-   light even when the operating system is in dark mode, rather than producing a
-   half-dark page.
+   DEEP MAROON ON WARM CREAM. The owner's direction, which supersedes the
+   earlier white-and-green theme.
 
-   The greens are a single hue ramp (around 152°, a true green rather than a
-   teal or a lime) so accents, charts and states read as one family. The
-   near-black carries a trace of the same hue, which keeps text from looking
-   blue-cold against the greens.
+     #790D16  primary action, hover, active
+     #F5EFE1  the page itself
+     white    the surfaces work happens on
 
-   Greys are supporting tones only — hairlines, muted labels, subtle fills.
-   They are not a third brand colour.
+   The combination is unusually strong for contrast, which is why it was chosen
+   over a softer pairing: white on maroon measures 11.2:1 and near-black on
+   cream 15.9:1, so every default pair clears WCAG AAA rather than scraping AA.
+
+   A LIGHT interface by specification: not a dark theme with a light option, so
+   `color-scheme: light` is declared and there are no dark-mode overrides.
+   Native controls and scrollbars therefore render light even when the operating
+   system is dark, rather than producing a half-dark page.
+
+   The cream is the FIELD and the white is the PAPER. Content sits on white
+   cards floating on cream; that one rule is what gives the interface its
+   structure, and it is why the cream is never used for a card and the white is
+   never used for the page.
+
+   The near-blacks and greys carry a trace of the maroon's hue so text does not
+   read blue-cold against the warm background. Greys are supporting tones only —
+   hairlines, muted labels, subtle fills — never a third brand colour.
    =========================================================================== */
 
 @theme {
@@ -24,72 +35,121 @@
     -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
 
-  /* Green ramp */
-  --color-green-50: oklch(0.971 0.021 152);
-  --color-green-100: oklch(0.936 0.045 152);
-  --color-green-200: oklch(0.878 0.078 152);
-  --color-green-300: oklch(0.798 0.105 152);
-  --color-green-400: oklch(0.7 0.13 152);
-  --color-green-500: oklch(0.606 0.138 152);
-  --color-green-600: oklch(0.523 0.127 152);
-  --color-green-700: oklch(0.442 0.107 152);
-  --color-green-800: oklch(0.372 0.086 152);
-  --color-green-900: oklch(0.305 0.066 152);
+  /* Maroon ramp, one hue (around 20°) so accents and fills read as a family. */
+  --color-maroon-50: #fdf3f3;
+  --color-maroon-100: #fbe3e4;
+  --color-maroon-200: #f6cbcd;
+  --color-maroon-300: #eda5a9;
+  --color-maroon-400: #e07178;
+  --color-maroon-500: #cf454e;
+  --color-maroon-600: #b92a34;
+  --color-maroon-700: #9a1c26;
+  --color-maroon-800: #790d16;
+  --color-maroon-900: #5e0d14;
+  --color-maroon-950: #3a0509;
 
-  /* Near-black, faintly green so it sits with the ramp */
-  --color-ink-900: oklch(0.17 0.012 152);
-  --color-ink-700: oklch(0.32 0.011 152);
-  --color-ink-500: oklch(0.48 0.009 152);
-  --color-ink-300: oklch(0.68 0.006 152);
+  /* Cream ramp, the warm field the interface sits on. */
+  --color-cream-50: #fdfbf6;
+  --color-cream-100: #faf6ec;
+  --color-cream-200: #f5efe1;
+  --color-cream-300: #ece2cd;
+  --color-cream-400: #ddcfb2;
+  --color-cream-500: #c9b792;
+
+  /* Near-black, faintly warm so it sits with the cream. */
+  --color-ink-900: #1a1412;
+  --color-ink-700: #4a403c;
+  --color-ink-500: #6b5f59;
+  --color-ink-300: #9a8e87;
 }
 
 :root {
   color-scheme: light;
 
-  /* Surfaces */
-  --surface: oklch(0.985 0.002 152);
-  --surface-raised: oklch(1 0 0);
-  --surface-sunken: oklch(0.965 0.004 152);
-  --surface-accent: oklch(0.971 0.021 152);
+  /* ---- Surfaces ---------------------------------------------------------
+     `--surface` is the page. `--surface-raised` is a card. Nothing else is a
+     background: the discipline of only two is what keeps the interface from
+     turning into a patchwork of tints. */
+  --surface: #f5efe1;
+  --surface-raised: #ffffff;
+  --surface-sunken: #faf6ec;
+  --surface-accent: #fdf3f3;
+  --surface-inverse: #790d16;
 
-  /* Text */
-  --text-primary: oklch(0.17 0.012 152);
-  --text-secondary: oklch(0.38 0.011 152);
-  --text-muted: oklch(0.52 0.009 152);
-  --text-on-accent: oklch(1 0 0);
+  /* ---- Text ------------------------------------------------------------- */
+  --text-primary: #1a1412;
+  --text-secondary: #4a403c;
+  --text-muted: #6b5f59;
+  --text-on-accent: #ffffff;
 
-  /* Lines. Two weights: a hairline for dense data, a stronger one for
-     structural separation. Depth comes from these rather than stacked
-     shadows. */
-  --line-hairline: oklch(0.915 0.005 152);
-  --line-strong: oklch(0.84 0.008 152);
+  /* ---- Lines ------------------------------------------------------------
+     Two weights: a hairline for dense data, a stronger one for structural
+     separation. Depth comes from these rather than from stacked shadows. */
+  --line-hairline: #ebe2d2;
+  --line-strong: #d9ccb4;
+  --line-on-white: #ece7dd;
 
-  /* Brand */
-  --accent: oklch(0.523 0.127 152);
-  --accent-hover: oklch(0.455 0.112 152);
-  --accent-soft: oklch(0.936 0.045 152);
-  --accent-ring: oklch(0.606 0.138 152 / 0.35);
+  /* ---- Brand ------------------------------------------------------------ */
+  --accent: #790d16;
+  --accent-hover: #5e0d14;
+  --accent-active: #3a0509;
+  --accent-soft: #fbe3e4;
+  --accent-softer: #fdf3f3;
+  --accent-ring: rgb(121 13 22 / 0.32);
 
-  /* States. Green already means "good", so the others stay distinct from it:
-     amber for attention, a warm red for failure, slate for neutral. */
-  --state-good: oklch(0.523 0.127 152);
-  --state-good-soft: oklch(0.945 0.04 152);
-  --state-warn: oklch(0.62 0.13 72);
-  --state-warn-soft: oklch(0.96 0.055 85);
-  --state-bad: oklch(0.55 0.17 25);
-  --state-bad-soft: oklch(0.955 0.03 25);
-  --state-neutral: oklch(0.55 0.02 250);
-  --state-neutral-soft: oklch(0.955 0.008 250);
+  /* ---- States -----------------------------------------------------------
+     The brand is a dark red, so "bad" cannot be told from "primary" by colour
+     alone — their luminances sit 1.9:1 apart and no red fixes that. They are
+     separated by FORM instead, and that rule is load-bearing:
 
-  /* Radii. Modest, and deliberately smaller for dense data so tables stay
-     readable rather than looking like a row of pills. */
-  --radius-card: 0.625rem;
-  --radius-control: 0.5rem;
-  --radius-data: 0.25rem;
+       primary action      solid maroon, white label
+       destructive action  OUTLINED in danger red, never solid
+       error message       tinted panel, danger text, role="alert"
 
-  /* One shadow level, used sparingly. */
-  --shadow-card: 0 1px 2px oklch(0.17 0.012 152 / 0.04);
-  --shadow-raised: 0 2px 8px oklch(0.17 0.012 152 / 0.07);
+     So a destructive control never looks like the primary one, whatever the
+     hue. See docs/design-system.md. */
+  --state-good: #1b6b50;
+  --state-good-soft: #e8f3ee;
+  --state-warn: #8a5a00;
+  --state-warn-soft: #fdf2dc;
+  --state-bad: #c1292e;
+  --state-bad-soft: #fce9e9;
+  --state-neutral: #4a5568;
+  --state-neutral-soft: #eef0f3;
+  --state-info: #2a6f97;
+  --state-info-soft: #e7f0f6;
+
+  /* ---- Chart series -----------------------------------------------------
+     Six purposeful colours, every one of which clears AA as a fill under white
+     text AND as text on either surface, so a bar can be labelled inside or
+     beside itself. Ordered by how often a chart needs them. */
+  --chart-1: #790d16;
+  --chart-2: #1b6b50;
+  --chart-3: #2a6f97;
+  --chart-4: #8a5a00;
+  --chart-5: #6b4e9e;
+  --chart-6: #a8552a;
+
+  /* ---- Radii ------------------------------------------------------------
+     Roomier than before: the spacious look depends on it. Still smaller for
+     dense data, so tables read as tables rather than as rows of pills. */
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+  --radius-data: 0.375rem;
+  --radius-pill: 999px;
+
+  /* ---- Elevation --------------------------------------------------------
+     Warm-tinted, because a neutral grey shadow on cream reads as dirt. */
+  --shadow-card: 0 1px 2px rgb(58 5 9 / 0.04), 0 1px 3px rgb(58 5 9 / 0.03);
+  --shadow-raised: 0 2px 4px rgb(58 5 9 / 0.05), 0 4px 12px rgb(58 5 9 / 0.06);
+  --shadow-overlay: 0 8px 24px rgb(58 5 9 / 0.14);
+
+  /* ---- Layout -----------------------------------------------------------
+     The sidebar width is a token because the shell, the mobile drawer and the
+     content offset all have to agree about it. */
+  --sidebar-width: 16rem;
+  --topbar-height: 3.5rem;
+  --content-max: 80rem;
 }
 
 body {
@@ -103,7 +163,20 @@ body {
 /* Headings read slightly tighter than the default, which keeps dense
    administrative screens from feeling loose. */
 h1, h2, h3 {
-  letter-spacing: -0.011em;
+  letter-spacing: -0.012em;
+}
+
+/* --------------------------------------------------------------------------
+   Bangla
+   --------------------------------------------------------------------------
+   Bengali has taller ascenders and a heavier matra line than Latin, so at the
+   same font-size it reads smaller and cramped. These give it a little more room
+   without disturbing the Latin rhythm around it. Applied by `lang="bn"` or the
+   `.bn` class, so a mixed line is not affected as a whole.
+   -------------------------------------------------------------------------- */
+:where([lang="bn"], .bn) {
+  line-height: 1.75;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
 /* Tabular figures for roll numbers, marks, amounts, times and percentages, so
@@ -114,11 +187,74 @@ h1, h2, h3 {
 }
 
 /* A visible, consistent focus ring. Keyboard users navigate the attendance
-   roster through dozens of controls, so this has to be unmistakable. */
+   roster through dozens of controls, so this has to be unmistakable — and on a
+   maroon control the ring needs to sit outside it to be seen at all. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-control);
+}
+
+/* --------------------------------------------------------------------------
+   Anything sitting on the maroon
+   --------------------------------------------------------------------------
+   The sidebar, the sign-in panel, the selected lesson chip. Two things change
+   on a maroon fill, and both were being repeated at every call site until one
+   of them was forgotten: the text has to be white, and the focus ring has to
+   invert or it disappears into the fill.
+
+   `color` is set on the element itself rather than on its descendants, so a
+   child that wants a different colour — a white status pill, say — still wins
+   by setting its own.
+   -------------------------------------------------------------------------- */
+.on-accent {
+  color: var(--text-on-accent);
+}
+
+:where(.on-accent) :where(a, button, [tabindex]):focus-visible {
+  outline-color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbars inside panels
+   --------------------------------------------------------------------------
+   Long rosters and wide tables scroll inside their cards. The default Windows
+   scrollbar is a grey slab that cuts the warm palette; this keeps it quiet.
+   -------------------------------------------------------------------------- */
+.scroll-soft {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* --------------------------------------------------------------------------
+   Loading
+   --------------------------------------------------------------------------
+   A skeleton rather than a spinner: these pages are tables and cards whose
+   shape is known before the data arrives, so showing that shape tells the user
+   what is coming and stops the layout jumping when it does.
+   -------------------------------------------------------------------------- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 25%,
+    var(--line-hairline) 37%,
+    var(--surface-sunken) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius-data);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: var(--surface-sunken);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -127,7 +263,7 @@ h1, h2, h3 {
    Routines, admit cards and result sheets are printed. Page geometry per
    document kind is set on the printing route itself; these are the shared
    resets. Colours are forced to black on white because school printers are
-   usually monochrome, and a green header bar prints as muddy grey.
+   usually monochrome, and a maroon header bar prints as muddy grey.
    -------------------------------------------------------------------------- */
 @media print {
   :root {
@@ -135,14 +271,17 @@ h1, h2, h3 {
     --surface-raised: #fff;
     --surface-sunken: #fff;
     --surface-accent: #fff;
+    --surface-inverse: #fff;
     --text-primary: #000;
     --text-secondary: #000;
     --text-muted: #333;
     --line-hairline: #999;
     --line-strong: #000;
+    --line-on-white: #999;
     --accent: #000;
     --shadow-card: none;
     --shadow-raised: none;
+    --shadow-overlay: none;
   }
 
   body {

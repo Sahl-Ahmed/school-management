@@ -53,7 +53,7 @@ export function StudentForm({
           <Link
             href="/authority/students"
             className="rounded-lg border px-4 py-2.5 text-sm font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
+            style={{ borderColor: "var(--line-on-white)" }}
           >
             Back to students
           </Link>

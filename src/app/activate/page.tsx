@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
+import { Icon } from "@/components/icon";
 import { ActivationFlow } from "./activation-flow";
 
 export const metadata: Metadata = { title: "Activate your account" };
@@ -20,16 +21,30 @@ export default async function ActivatePage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <header className="mb-6 text-center">
+        <header className="mb-6">
+          <span
+            aria-hidden="true"
+            className="mb-3 grid h-11 w-11 place-items-center rounded-[var(--radius-control)]"
+            style={{ background: "var(--accent)", color: "var(--text-on-accent)" }}
+          >
+            <Icon name="profile" size={20} />
+          </span>
           <h1 className="text-xl font-semibold tracking-tight">Activate your account</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Verify the phone number on record and choose your password
+          <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            Verify the phone number the school has on record, then choose your
+            password. The code is a development simulation until an SMS provider
+            is connected, so it is shown on screen rather than delivered.
           </p>
         </header>
 
         <div
-          className="rounded-xl border p-5"
-          style={{ borderColor: "var(--line-hairline)", background: "var(--surface-raised)" }}
+          className="p-5 sm:p-6"
+          style={{
+            borderRadius: "var(--radius-card)",
+            border: "1px solid var(--line-on-white)",
+            background: "var(--surface-raised)",
+            boxShadow: "var(--shadow-card)",
+          }}
         >
           <ActivationFlow purpose="activation" />
         </div>
@@ -38,8 +53,13 @@ export default async function ActivatePage() {
           <form action={signOut} className="mt-4">
             <button
               type="submit"
-              className="w-full rounded-lg border px-4 py-2 text-sm font-medium"
-              style={{ borderColor: "var(--line-hairline)" }}
+              className="w-full px-4 py-2.5 text-sm font-medium"
+              style={{
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+                color: "var(--text-secondary)",
+              }}
             >
               Sign out
             </button>

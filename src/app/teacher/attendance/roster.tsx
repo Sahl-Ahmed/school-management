@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { submitAttendance, type AttendanceState } from "./actions";
 import { Banner, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
+import type { Tone } from "@/components/charts";
 
 export type RosterStudent = {
   id: string;
@@ -14,12 +15,21 @@ export type RosterStudent = {
   current_remark: string | null;
 };
 
-const STATUSES = [
-  { value: "present", label: "Present", tone: "good" as const },
-  { value: "absent", label: "Absent", tone: "bad" as const },
-  { value: "late", label: "Late", tone: "warn" as const },
-  { value: "excused", label: "Excused", tone: "neutral" as const },
+const STATUSES: { value: string; label: string; short: string; tone: Tone }[] = [
+  { value: "present", label: "Present", short: "P", tone: "good" },
+  { value: "absent", label: "Absent", short: "A", tone: "bad" },
+  { value: "late", label: "Late", short: "L", tone: "warn" },
+  { value: "excused", label: "Excused", short: "E", tone: "neutral" },
 ];
+
+const TONE_VAR: Record<Tone, string> = {
+  good: "var(--state-good)",
+  warn: "var(--state-warn)",
+  bad: "var(--state-bad)",
+  neutral: "var(--state-neutral)",
+  accent: "var(--accent)",
+  info: "var(--state-info)",
+};
 
 const initial: AttendanceState = {};
 
@@ -66,6 +76,15 @@ export function AttendanceRoster({
 
   const markedCount = students.filter((s) => marks[s.id]).length;
   const isCorrection = Boolean(alreadySubmittedAt);
+  const progress = students.length > 0 ? (markedCount / students.length) * 100 : 0;
+
+  // A per-status tally, so the teacher can check the shape of what they are
+  // about to submit without counting rows. Reading "28 present, 2 absent"
+  // catches a mis-tap that "30 of 30 marked" cannot.
+  const tally = STATUSES.map((s) => ({
+    ...s,
+    count: students.filter((st) => marks[st.id] === s.value).length,
+  })).filter((s) => s.count > 0);
 
   const entriesJson = JSON.stringify(
     students
@@ -93,10 +112,11 @@ export function AttendanceRoster({
   return (
     <form
       action={action}
+      className="overflow-hidden"
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
@@ -105,25 +125,48 @@ export function AttendanceRoster({
       <input type="hidden" name="roster_size" value={students.length} />
       <input type="hidden" name="entries" value={entriesJson} />
 
-      <header
-        className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-        style={{ borderBottom: "1px solid var(--line-hairline)" }}
-      >
-        <div>
-          <h2 className="text-sm font-semibold">{lessonLabel}</h2>
-          <p className="numeric mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-            {markedCount} of {students.length} marked
-          </p>
+      <header style={{ borderBottom: "1px solid var(--line-on-white)" }}>
+        <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">{lessonLabel}</h2>
+            <p className="numeric mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+              {markedCount} of {students.length} marked
+              {tally.length > 0 && (
+                <>
+                  {" · "}
+                  {tally.map((t) => `${t.count} ${t.label.toLowerCase()}`).join(", ")}
+                </>
+              )}
+            </p>
+          </div>
+
+          {isCorrection ? (
+            <Status tone="good">submitted</Status>
+          ) : (
+            <Status tone="warn" dot>
+              not submitted
+            </Status>
+          )}
         </div>
 
-        {isCorrection ? (
-          <Pill tone="good">Submitted</Pill>
-        ) : (
-          <Pill tone="warn">Not submitted</Pill>
-        )}
+        {/* How far through the roster the teacher is. The figure above is the
+            real statement; this is only the glance. */}
+        <div
+          aria-hidden="true"
+          className="h-1 w-full"
+          style={{ background: "var(--surface-sunken)" }}
+        >
+          <div
+            className="h-full transition-all"
+            style={{
+              width: `${progress}%`,
+              background: markedCount === students.length ? "var(--state-good)" : "var(--accent)",
+            }}
+          />
+        </div>
       </header>
 
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-5">
         {state.ok && (
           <Banner tone="success">
             {state.correction
@@ -145,15 +188,28 @@ export function AttendanceRoster({
             a bulk setter comes first — but it fills the controls rather than
             submitting, so the teacher still confirms. */}
         {!disabled && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span style={{ color: "var(--text-muted)" }}>Mark everyone:</span>
+          <div
+            className="flex flex-wrap items-center gap-2 px-3 py-2.5 text-xs"
+            style={{
+              borderRadius: "var(--radius-control)",
+              background: "var(--surface-sunken)",
+            }}
+          >
+            <span className="font-medium" style={{ color: "var(--text-secondary)" }}>
+              Mark everyone
+            </span>
             {STATUSES.map((s) => (
               <button
                 key={s.value}
                 type="button"
                 onClick={() => setAll(s.value)}
-                className="rounded border px-2.5 py-1 font-medium"
-                style={{ borderColor: "var(--line-hairline)" }}
+                className="px-2.5 py-1 font-medium transition-colors"
+                style={{
+                  borderRadius: "var(--radius-data)",
+                  border: "1px solid var(--line-strong)",
+                  background: "var(--surface-raised)",
+                  color: TONE_VAR[s.tone],
+                }}
               >
                 {s.label}
               </button>
@@ -161,99 +217,130 @@ export function AttendanceRoster({
             <button
               type="button"
               onClick={() => setMarks({})}
-              className="rounded border px-2.5 py-1 font-medium"
-              style={{ borderColor: "var(--line-hairline)" }}
+              className="px-2.5 py-1 font-medium transition-colors"
+              style={{
+                borderRadius: "var(--radius-data)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+                color: "var(--text-muted)",
+              }}
             >
               Clear
             </button>
           </div>
         )}
 
-        <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
-          {students.map((s) => (
-            <li key={s.id} className="py-2.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <span
-                  className="numeric w-8 shrink-0 text-sm font-semibold"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {s.roll_no}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{s.full_name}</span>
+        <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
+          {students.map((s) => {
+            const chosen = marks[s.id];
+            return (
+              <li key={s.id} className="py-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <span
-                    className="numeric block text-xs"
-                    style={{ color: "var(--text-muted)" }}
+                    className="numeric grid h-8 w-8 shrink-0 place-items-center text-sm font-semibold"
+                    style={{
+                      borderRadius: "var(--radius-data)",
+                      background: "var(--surface-sunken)",
+                      color: "var(--text-secondary)",
+                    }}
                   >
-                    {s.registration_no}
+                    {s.roll_no}
                   </span>
-                </span>
 
-                <fieldset className="flex shrink-0 flex-wrap gap-1" disabled={disabled}>
-                  <legend className="sr-only">
-                    Attendance for {s.full_name}, roll {s.roll_no}
-                  </legend>
-                  {STATUSES.map((opt) => {
-                    const checked = marks[s.id] === opt.value;
-                    return (
-                      <label
-                        key={opt.value}
-                        className="cursor-pointer select-none px-2.5 py-1 text-xs font-medium"
-                        style={{
-                          borderRadius: "var(--radius-data)",
-                          border: `1px solid ${checked ? "var(--accent)" : "var(--line-hairline)"}`,
-                          background: checked ? "var(--accent)" : "transparent",
-                          color: checked ? "var(--text-on-accent)" : "var(--text-secondary)",
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          /* No `name`: the submitted payload comes from the
-                             hidden `entries` field, so these controls only
-                             drive state. */
-                          value={opt.value}
-                          checked={checked}
-                          onChange={() =>
-                            setMarks((m) => ({ ...m, [s.id]: opt.value }))
-                          }
-                          className="sr-only"
-                        />
-                        {opt.label}
-                      </label>
-                    );
-                  })}
-                </fieldset>
-              </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{s.full_name}</span>
+                    <span
+                      className="numeric block text-xs"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {s.registration_no}
+                    </span>
+                  </span>
 
-              {/* A remark is where "left early, parent informed" goes. Shown
-                  only once a status is chosen, to keep the roster scannable. */}
-              {marks[s.id] && marks[s.id] !== "present" && (
-                <input
-                  type="text"
-                  value={remarks[s.id] ?? ""}
-                  onChange={(e) =>
-                    setRemarks((r) => ({ ...r, [s.id]: e.target.value }))
-                  }
-                  placeholder="Optional note"
-                  maxLength={200}
-                  aria-label={`Note for ${s.full_name}`}
-                  className="mt-2 w-full rounded border px-2 py-1 text-xs"
-                  style={{
-                    borderColor: "var(--line-hairline)",
-                    background: "var(--surface)",
-                  }}
-                />
-              )}
-            </li>
-          ))}
+                  {/*
+                   * The chosen status is coloured by its own meaning, not by
+                   * the brand: present is green, absent is red. Colouring every
+                   * selection maroon made "Absent" and "Present" look identical
+                   * once chosen, which on a roster of forty is a real error.
+                   */}
+                  <fieldset className="flex shrink-0 flex-wrap gap-1" disabled={disabled}>
+                    <legend className="sr-only">
+                      Attendance for {s.full_name}, roll {s.roll_no}
+                    </legend>
+                    {STATUSES.map((opt) => {
+                      const checked = chosen === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          /* A finger needs a target, so the compact letters
+                             get height and a minimum width on a phone; the
+                             worded version on a wider screen needs neither. */
+                          className="inline-flex min-w-9 cursor-pointer select-none items-center justify-center px-2.5 py-2.5 text-xs font-medium transition-colors sm:min-w-0 sm:py-1.5"
+                          style={{
+                            borderRadius: "var(--radius-data)",
+                            border: `1px solid ${checked ? TONE_VAR[opt.tone] : "var(--line-strong)"}`,
+                            background: checked ? TONE_VAR[opt.tone] : "transparent",
+                            color: checked ? "#fff" : "var(--text-secondary)",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            /* No `name`: the submitted payload comes from the
+                               hidden `entries` field, so these controls only
+                               drive state. */
+                            value={opt.value}
+                            checked={checked}
+                            onChange={() =>
+                              setMarks((m) => ({ ...m, [s.id]: opt.value }))
+                            }
+                            className="sr-only"
+                          />
+                          <span className="hidden sm:inline">{opt.label}</span>
+                          <span className="sm:hidden" aria-hidden="true">
+                            {opt.short}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                </div>
+
+                {/* A remark is where "left early, parent informed" goes. Shown
+                    only once a status is chosen, to keep the roster scannable. */}
+                {chosen && chosen !== "present" && (
+                  <input
+                    type="text"
+                    value={remarks[s.id] ?? ""}
+                    onChange={(e) =>
+                      setRemarks((r) => ({ ...r, [s.id]: e.target.value }))
+                    }
+                    placeholder="Optional note, for example: left early, guardian informed"
+                    maxLength={200}
+                    aria-label={`Note for ${s.full_name}`}
+                    className="mt-2.5 w-full px-3 py-2 text-xs"
+                    style={{
+                      borderRadius: "var(--radius-control)",
+                      border: "1px solid var(--line-strong)",
+                      background: "var(--surface)",
+                    }}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         {isCorrection && (
           <label className="block text-sm">
             <span className="mb-1.5 block font-medium">
               Reason for the correction
-              <span aria-hidden="true" className="ml-0.5" style={{ color: "var(--state-bad)" }}>*</span>
+              <span
+                aria-hidden="true"
+                className="ml-0.5"
+                style={{ color: "var(--state-bad)" }}
+              >
+                *
+              </span>
             </span>
             <input
               type="text"
@@ -261,25 +348,40 @@ export function AttendanceRoster({
               required
               maxLength={500}
               placeholder="For example: marked absent in error, parent confirmed attendance"
-              className="w-full rounded-lg border px-3 py-2 text-sm"
+              className="w-full px-3 py-2.5 text-sm"
               style={{
-                borderColor: "var(--line-hairline)",
-                background: "var(--surface)",
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
               }}
             />
           </label>
         )}
+      </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <SubmitButton pendingLabel="Submitting…">
-            {isCorrection ? "Save correction" : "Submit attendance"}
-          </SubmitButton>
+      {/*
+       * The submit stays in reach on a phone.
+       *
+       * A roster of forty is taller than the screen, and a teacher who has
+       * finished marking should not have to scroll to the end to submit. The
+       * bar sticks to the bottom of the viewport while the form is on screen.
+       */}
+      <div
+        className="sticky bottom-0 flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4"
+        style={{
+          borderTop: "1px solid var(--line-on-white)",
+          background: "color-mix(in srgb, var(--surface-raised) 92%, transparent)",
+          backdropFilter: "saturate(180%) blur(8px)",
+        }}
+      >
+        <SubmitButton pendingLabel="Submitting…">
+          {isCorrection ? "Save correction" : "Submit attendance"}
+        </SubmitButton>
 
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            Leaving this unsubmitted is not the same as marking everyone absent.
-            An unsubmitted lesson is excluded from every attendance percentage.
-          </p>
-        </div>
+        <p className="w-full text-xs leading-relaxed sm:w-auto sm:min-w-0 sm:flex-1" style={{ color: "var(--text-muted)" }}>
+          Leaving this unsubmitted is not the same as marking everyone absent. An
+          unsubmitted lesson is excluded from every attendance percentage.
+        </p>
       </div>
     </form>
   );

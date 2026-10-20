@@ -49,13 +49,13 @@ export function ChargeGenerator({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
       <h2
         className="px-4 py-3 text-sm font-semibold"
-        style={{ borderBottom: "1px solid var(--line-hairline)" }}
+        style={{ borderBottom: "1px solid var(--line-on-white)" }}
       >
         Bill a month
         <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>

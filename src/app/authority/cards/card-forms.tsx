@@ -220,7 +220,7 @@ export function OverrideForm({
           maxLength={500}
           placeholder="Reason — kept on the record"
           className="w-48 rounded border px-2 py-1 text-xs"
-          style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+          style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
         />
       </label>
       <RowButton pendingLabel="Recording…" tone="bad">Approve exception</RowButton>
@@ -261,7 +261,7 @@ export function IdCardIssuer({
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value)}
             className="rounded-lg border px-2 py-1.5 text-sm"
-            style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+            style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
           >
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
@@ -282,7 +282,7 @@ export function IdCardIssuer({
               maxLength={500}
               placeholder="Card lost"
               className="w-40 rounded-lg border px-2 py-1.5 text-sm"
-              style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+              style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
             />
           </label>
         )}
@@ -335,7 +335,7 @@ export function IdCardIssuer({
                 maxLength={500}
                 placeholder="Reason — kept on the record"
                 className="w-48 rounded-lg border px-2 py-1.5 text-sm"
-                style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
               />
             </label>
             <RowButton pendingLabel="Revoking…" tone="bad">Revoke</RowButton>

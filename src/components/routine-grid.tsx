@@ -1,4 +1,4 @@
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 /**
  * The weekly routine as a grid: weekdays down, periods across.
@@ -95,7 +95,7 @@ export function RoutineGrid({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="scroll-soft overflow-x-auto">
       <table
         className="w-full border-collapse text-left"
         style={{ fontSize: compact ? "0.6875rem" : "0.8125rem" }}
@@ -122,7 +122,7 @@ export function RoutineGrid({
                 className="whitespace-nowrap px-2 py-2 font-semibold"
                 style={{
                   borderBottom: "1px solid var(--line-strong)",
-                  borderLeft: "1px solid var(--line-hairline)",
+                  borderLeft: "1px solid var(--line-on-white)",
                   background: "var(--surface-sunken)",
                 }}
               >
@@ -144,7 +144,7 @@ export function RoutineGrid({
                 scope="row"
                 className="whitespace-nowrap px-2 py-2 align-top font-medium"
                 style={{
-                  borderBottom: "1px solid var(--line-hairline)",
+                  borderBottom: "1px solid var(--line-on-white)",
                   background: "var(--surface-sunken)",
                 }}
               >
@@ -159,8 +159,8 @@ export function RoutineGrid({
                     key={col.period_no}
                     className="px-2 py-2 align-top"
                     style={{
-                      borderBottom: "1px solid var(--line-hairline)",
-                      borderLeft: "1px solid var(--line-hairline)",
+                      borderBottom: "1px solid var(--line-on-white)",
+                      borderLeft: "1px solid var(--line-on-white)",
                     }}
                   >
                     {found.length === 0 ? (
@@ -187,7 +187,7 @@ export function RoutineGrid({
                             )}
                             {cell.effective_to && (
                               <span className="no-print mt-0.5 inline-block">
-                                <Pill tone="warn">until {cell.effective_to}</Pill>
+                                <Status tone="warn">until {cell.effective_to}</Status>
                               </span>
                             )}
                           </li>

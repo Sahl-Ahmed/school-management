@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { Banner } from "@/components/form";
+import { PageHeader, PageSections } from "@/components/ui";
 import { StudentForm, type SectionOption } from "./student-form";
 import { AUTHORITY_NAV } from "../../nav";
 
@@ -50,15 +50,13 @@ export default async function NewStudentPage() {
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <header>
-          <nav aria-label="Breadcrumb" className="mb-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            <Link href="/authority/students" className="underline">Students</Link>
-            <span aria-hidden="true"> / </span>
-            <span>Admit</span>
-          </nav>
-          <h1 className="text-xl font-semibold tracking-tight">Admit a student</h1>
-        </header>
+      <PageSections>
+        <PageHeader
+          breadcrumb={{ label: "Students", href: "/authority/students" }}
+          title="Admit a student"
+          meta={year ? `Enrolling into academic year ${year.name}` : undefined}
+          description="This creates the student record, their enrollment in a class, and their sign-in. The registration number is generated and cannot be chosen."
+        />
 
         {!year ? (
           <Banner tone="error">
@@ -77,7 +75,7 @@ export default async function NewStudentPage() {
             sections={options}
           />
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

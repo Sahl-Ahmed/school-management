@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { TEACHER_NAV } from "../nav";
 import { LibraryBrowser, type BrowserBook } from "@/components/library-browser";
+import { Card, PageHeader, PageSections } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Library" };
 export const dynamic = "force-dynamic";
@@ -37,14 +38,11 @@ export default async function TeacherLibraryPage({
       userName={profile?.full_name ?? "Teacher"}
       nav={TEACHER_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Library</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Every published book, across all classes · {books.length} book
-            {books.length === 1 ? "" : "s"}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="Library"
+          meta={`Every published book, across all classes · ${books.length} book${books.length === 1 ? "" : "s"}`}
+        />
 
         <LibraryBrowser
           basePath="/teacher/library"
@@ -58,12 +56,14 @@ export default async function TeacherLibraryPage({
           }
         />
 
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Teachers see the whole library, not only their own classes&apos; books —
-          material for a class above or below is often what you need when
-          preparing. The school office adds and publishes books.
-        </p>
-      </div>
+        <Card>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            Teachers see the whole library, not only their own classes&apos; books
+            — material for a class above or below is often what you need when
+            preparing. The school office adds and publishes books.
+          </p>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

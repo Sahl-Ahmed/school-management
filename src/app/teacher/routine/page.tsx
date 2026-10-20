@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { TEACHER_NAV } from "../nav";
 import { RoutineGrid, type RoutineCell } from "@/components/routine-grid";
-import { Banner } from "@/components/form";
+import {
+  Card,
+  CardHeader,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+} from "@/components/ui";
 import { one } from "@/lib/supabase/relations";
 import { schoolToday } from "@/lib/school/calendar";
 
@@ -63,33 +70,36 @@ export default async function TeacherRoutinePage() {
       userName={profile?.full_name ?? "Teacher"}
       nav={TEACHER_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">My timetable</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Periods in effect today. Each cell shows the subject and the class.
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="My timetable"
+          meta={`${cells.length} period${cells.length === 1 ? "" : "s"} in effect today`}
+          description="Each cell shows the subject and the class you teach it to."
+          actions={
+            <NavButton href="/teacher/attendance" tone="primary" icon="check">
+              Take attendance
+            </NavButton>
+          }
+        />
 
-        {cells.length === 0 ? (
-          <Banner tone="info">
-            You have no periods scheduled. The school office sets these through
-            the class routine.
-          </Banner>
-        ) : (
-          <section
-            className="overflow-hidden"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            <RoutineGrid cells={cells} weekdays={teachingDays} />
-          </section>
-        )}
-      </div>
+        <Card padded={false}>
+          {cells.length === 0 ? (
+            <EmptyState icon="calendar" title="You have no periods scheduled">
+              The school office assigns lessons through the class routine. Until
+              it does, there is nothing for you to take attendance for — nothing
+              is outstanding on your side.
+            </EmptyState>
+          ) : (
+            <>
+              <CardHeader
+                title="This week"
+                hint="Non-teaching days are left out entirely. A period showing an end date has been closed by the office and stops on that day."
+              />
+              <RoutineGrid cells={cells} weekdays={teachingDays} />
+            </>
+          )}
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

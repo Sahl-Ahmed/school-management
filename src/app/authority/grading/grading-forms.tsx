@@ -8,7 +8,7 @@ import {
   type GradingState,
 } from "./actions";
 import { Banner, Field, SelectField, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 const initial: GradingState = {};
 
@@ -260,7 +260,7 @@ export function BandList({ bands }: { bands: Band[] }) {
               </thead>
               <tbody>
                 {sorted.map((b) => (
-                  <tr key={b.id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+                  <tr key={b.id} style={{ borderBottom: "1px solid var(--line-on-white)" }}>
                     <td className="py-2 font-semibold">{b.grade}</td>
                     <td className="numeric px-3 py-2 text-right">{Number(b.min_pct)}%</td>
                     <td className="numeric px-3 py-2 text-right">{Number(b.max_pct)}%</td>
@@ -268,9 +268,9 @@ export function BandList({ bands }: { bands: Band[] }) {
                       {Number(b.grade_point).toFixed(2)}
                     </td>
                     <td className="px-3 py-2">
-                      <Pill tone={b.is_pass ? "good" : "bad"}>
+                      <Status tone={b.is_pass ? "good" : "bad"}>
                         {b.is_pass ? "pass" : "fail"}
-                      </Pill>
+                      </Status>
                     </td>
                     <td className="py-2 text-right">
                       <form action={action}>

@@ -90,11 +90,11 @@ export function SubjectAdder({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-on-white)" }}>
         <h2 className="text-sm font-semibold">Add a subject</h2>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
           One row per class per subject. The maximum set here is what every mark
@@ -410,7 +410,7 @@ export function ResultsPublisher({
               autoComplete="off"
               placeholder="PUBLISH"
               className="w-48 rounded-lg border px-3 py-2 text-sm"
-              style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+              style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
             />
           </label>
           <SubmitButton pendingLabel="Publishing…">Publish results</SubmitButton>

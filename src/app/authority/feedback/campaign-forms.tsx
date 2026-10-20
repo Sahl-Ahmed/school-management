@@ -51,11 +51,11 @@ export function CampaignCreator({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-on-white)" }}>
         <h2 className="text-sm font-semibold">Create a feedback round</h2>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
           One round per term. It starts as a draft; generate the forms, then open
@@ -147,8 +147,11 @@ export function CampaignCreator({
         </label>
 
         <fieldset
-          className="rounded-xl border p-4"
-          style={{ borderColor: "var(--line-hairline)" }}
+          className="p-4"
+          style={{
+            borderRadius: "var(--radius-card)",
+            border: "1px solid var(--line-on-white)",
+          }}
         >
           <legend className="px-2 text-sm font-semibold">
             Questions
@@ -173,7 +176,7 @@ export function CampaignCreator({
                     maxLength={300}
                     onChange={(e) => update(i, "prompt", e.target.value)}
                     className="w-full rounded-lg border px-3 py-2 text-sm"
-                    style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                    style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                   />
                 </label>
                 <label className="block text-sm">
@@ -185,7 +188,7 @@ export function CampaignCreator({
                     placeholder="Same question in Bangla"
                     onChange={(e) => update(i, "prompt_bn", e.target.value)}
                     className="w-full rounded-lg border px-3 py-2 text-sm"
-                    style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+                    style={{ borderColor: "var(--line-on-white)", background: "var(--surface)" }}
                   />
                 </label>
                 {i === 2 && (

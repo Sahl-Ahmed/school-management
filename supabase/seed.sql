@@ -182,7 +182,7 @@ on conflict (id) do nothing;
 -- Registered so the Add Teacher form can record a device-user-id mapping. No
 -- real terminal is reachable: ip_address is in the TEST-NET-1 documentation
 -- range (RFC 5737), which is guaranteed never to be routed. The mapping alone
--- transmits no attendance; that needs the on-site bridge built in phase 8.
+-- transmits no attendance; that needs the on-site bridge built in phase 9.
 -- --------------------------------------------------------------------------
 insert into public.devices (id, name, model, serial_no, location, ip_address, port)
 values (

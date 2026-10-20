@@ -1,11 +1,26 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { STUDENT_NAV } from "../nav";
+import type { Route } from "next";
 import { Banner } from "@/components/form";
-import { RingMeter, StatCard, Pill } from "@/components/charts";
+import { RingMeter, StatCard } from "@/components/charts";
+import {
+  ButtonLink,
+  Card,
+  CardBody,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  FilterChips,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
 
 export const metadata: Metadata = { title: "My results" };
 export const dynamic = "force-dynamic";
@@ -94,14 +109,31 @@ export default async function StudentResultsPage({
       userName={profile?.full_name ?? "Student"}
       nav={STUDENT_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">My results</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {student?.full_name}
-            {student?.registration_no && ` · ${student.registration_no}`}
-          </p>
-        </header>
+      <PageSections>
+        <PageHeader
+          title="My results"
+          meta={
+            <>
+              {student?.full_name}
+              {student?.registration_no && ` · ${student.registration_no}`}
+              {results.length > 0 &&
+                ` · ${results.length} published result${results.length === 1 ? "" : "s"}`}
+            </>
+          }
+          actions={
+            selected ? (
+              /* A route handler returning a PDF, so a plain anchor. */
+              <ButtonLink
+                href={`/print/result/${selected.exam_id}`}
+                download
+                tone="primary"
+                icon="chart"
+              >
+                Download this sheet
+              </ButtonLink>
+            ) : undefined
+          }
+        />
 
         {!student && (
           <Banner tone="error">
@@ -111,53 +143,29 @@ export default async function StudentResultsPage({
         )}
 
         {student && results.length === 0 && (
-          <Banner tone="info">
-            No results have been published yet. A result appears here only after
-            the school publishes it — marks being entered are not visible.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState icon="chart" title="No result has been published yet">
+              A result appears here only after the school publishes it. Marks
+              being entered or checked are private to the office, so an empty
+              page does not mean your marks are missing.
+            </EmptyState>
+          </Card>
         )}
 
         {results.length > 1 && (
-          <nav aria-label="Choose an exam" className="overflow-x-auto">
-            <ul className="flex gap-1 pb-1">
-              {results.map((r) => {
-                const active = r.exam_id === selected?.exam_id;
-                return (
-                  <li key={r.exam_id}>
-                    <Link
-                      href={{ pathname: "/student/results", query: { exam: r.exam_id } }}
-                      aria-current={active ? "page" : undefined}
-                      className="block whitespace-nowrap px-3 py-2 text-sm"
-                      style={{
-                        borderRadius: "var(--radius-control)",
-                        background: active ? "var(--accent)" : "var(--surface-raised)",
-                        color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                        border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
-                      }}
-                    >
-                      <span className="block font-medium">{r.exam_name}</span>
-                      <span className="block text-xs opacity-80">
-                        {r.term_name} · {r.academic_year}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+          <FilterChips
+            label="Choose an exam"
+            options={results.map((r) => ({
+              href: { pathname: "/student/results" as Route, query: { exam: r.exam_id } },
+              label: `${r.exam_name} · ${r.term_name}`,
+              active: r.exam_id === selected?.exam_id,
+            }))}
+          />
         )}
 
         {selected && (
           <>
-            <section
-              className="p-4"
-              style={{
-                borderRadius: "var(--radius-card)",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--line-hairline)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
+            <Card>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold">{selected.exam_name}</h2>
@@ -166,13 +174,13 @@ export default async function StudentResultsPage({
                     {new Date(selected.published_at).toLocaleDateString("en-GB")}
                   </p>
                 </div>
-                <Pill tone={selected.is_pass ? "good" : "bad"}>
-                  {selected.is_pass ? "Passed" : "Not passed"}
-                </Pill>
+                <Status tone={selected.is_pass ? "good" : "bad"} dot>
+                  {selected.is_pass ? "passed" : "not passed"}
+                </Status>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="sm:col-span-2">
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div className="col-span-2 self-center">
                   <RingMeter
                     value={Number(selected.total_obtained)}
                     denominator={Number(selected.total_max)}
@@ -190,6 +198,7 @@ export default async function StudentResultsPage({
                       : `on the ${selected.snapshot.scale} scale`
                   }
                   tone={selected.is_pass ? "good" : "bad"}
+                  icon="grade"
                 />
 
                 <StatCard
@@ -200,7 +209,8 @@ export default async function StudentResultsPage({
                       ? ` · position ${selected.position_in_class} in class`
                       : ""
                   }`}
-                  tone={selected.is_pass ? "accent" : "bad"}
+                  tone={selected.is_pass ? "info" : "bad"}
+                  icon="chart"
                 />
               </div>
 
@@ -225,93 +235,77 @@ export default async function StudentResultsPage({
                     .
                   </p>
                 )}
-            </section>
+            </Card>
 
-            <section
-              className="overflow-hidden"
-              style={{
-                borderRadius: "var(--radius-card)",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--line-hairline)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                <h2 className="text-sm font-semibold">Subjects</h2>
-                <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                  Exactly as published. A later correction does not change this
-                  sheet.
-                </p>
-              </header>
+            <Card padded={false}>
+              <CardHeader
+                title="Subjects"
+                hint="Exactly as published. A later correction does not change this sheet, which is why it can be trusted as a record."
+              />
 
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <caption className="sr-only">Subject-wise marks and grades</caption>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                      <th scope="col" className="px-4 py-2 text-left font-semibold">Subject</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Marks</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Out of</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Pass mark</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Grade</th>
-                      <th scope="col" className="px-4 py-2 text-right font-semibold">Point</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subjects.map((s) => (
-                      <tr key={s.subject} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                        <td className="px-4 py-2 font-medium">{s.subject}</td>
-                        <td className="numeric px-3 py-2 text-right">
-                          {s.absent ? (
-                            <span style={{ color: "var(--text-muted)" }}>absent</span>
-                          ) : (
-                            s.obtained
-                          )}
-                        </td>
-                        <td className="numeric px-3 py-2 text-right">{s.max}</td>
-                        <td className="numeric px-3 py-2 text-right" style={{ color: "var(--text-muted)" }}>
-                          {s.pass_marks}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <Pill tone={s.passed ? "good" : "bad"}>{s.grade ?? "—"}</Pill>
-                        </td>
-                        <td className="numeric px-4 py-2 text-right">
-                          {s.grade_point.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ borderTop: "1px solid var(--line-strong)" }}>
-                      <th scope="row" className="px-4 py-2 text-left font-semibold">Total</th>
-                      <td className="numeric px-3 py-2 text-right font-semibold">
-                        {Number(selected.total_obtained)}
-                      </td>
-                      <td className="numeric px-3 py-2 text-right font-semibold">
-                        {Number(selected.total_max)}
-                      </td>
-                      <td />
-                      <td className="px-3 py-2 text-right font-semibold">{selected.grade}</td>
-                      <td className="numeric px-4 py-2 text-right font-semibold">
+              <DataTable
+                caption="Subject-wise marks and grades"
+                head={
+                  <>
+                    <Th>Subject</Th>
+                    <Th align="right">Marks</Th>
+                    <Th align="right">Out of</Th>
+                    <Th align="right">Pass mark</Th>
+                    <Th align="right">Grade</Th>
+                    <Th align="right">Point</Th>
+                  </>
+                }
+                foot={
+                  <Tr>
+                    <Td>
+                      <span className="font-semibold">Total</span>
+                    </Td>
+                    <Td numeric>
+                      <span className="font-semibold">{Number(selected.total_obtained)}</span>
+                    </Td>
+                    <Td numeric>
+                      <span className="font-semibold">{Number(selected.total_max)}</span>
+                    </Td>
+                    <Td />
+                    <Td align="right">
+                      <span className="font-semibold">{selected.grade}</span>
+                    </Td>
+                    <Td numeric>
+                      <span className="font-semibold">
                         {selected.gpa === null ? "—" : Number(selected.gpa).toFixed(2)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </section>
+                      </span>
+                    </Td>
+                  </Tr>
+                }
+              >
+                {subjects.map((s) => (
+                  <Tr key={s.subject}>
+                    <Td>
+                      <span className="font-medium">{s.subject}</span>
+                    </Td>
+                    <Td numeric>
+                      {s.absent ? (
+                        <span style={{ color: "var(--text-muted)" }}>absent</span>
+                      ) : (
+                        s.obtained
+                      )}
+                    </Td>
+                    <Td numeric>{s.max}</Td>
+                    <Td numeric>
+                      <span style={{ color: "var(--text-muted)" }}>{s.pass_marks}</span>
+                    </Td>
+                    <Td align="right">
+                      <Status tone={s.passed ? "good" : "bad"}>{s.grade ?? "—"}</Status>
+                    </Td>
+                    <Td numeric>{s.grade_point.toFixed(2)}</Td>
+                  </Tr>
+                ))}
+              </DataTable>
+            </Card>
 
             {/* Attendance over the term's own window, counted from submitted
                 lessons only — the same basis as the attendance screen. */}
-            <section
-              className="p-4"
-              style={{
-                borderRadius: "var(--radius-card)",
-                background: "var(--surface-raised)",
-                border: "1px solid var(--line-hairline)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
+            <Card>
               <h2 className="mb-3 text-sm font-semibold">Attendance for this term</h2>
 
               {attendance && attendance.submitted_lessons > 0 ? (
@@ -339,15 +333,20 @@ export default async function StudentResultsPage({
                     : ", because no attendance was submitted in its window."}
                 </p>
               )}
-            </section>
+            </Card>
 
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Result SMS is a development simulation until the SMS integration
-              phase, so no message has been sent to any phone.
-            </p>
+            <Card>
+              <CardBody className="p-0">
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                  Result SMS is a development simulation: the message to your
+                  guardian is written and costed but never delivered, because no
+                  SMS provider is connected yet.
+                </p>
+              </CardBody>
+            </Card>
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

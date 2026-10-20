@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { submitMarks, type MarksState } from "./actions";
 import { Banner, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 export type MarkRow = {
   student_id: string;
@@ -71,14 +71,16 @@ export function MarkSheet({
 
   const entered = entries.length;
   const overMax = entries.filter((e) => e.marks !== null && e.marks > maxMarks).length;
+  const progress = students.length > 0 ? (entered / students.length) * 100 : 0;
 
   return (
     <form
       action={action}
+      className="overflow-hidden"
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
         display: "block",
       }}
@@ -88,22 +90,41 @@ export function MarkSheet({
       <input type="hidden" name="roster_size" value={students.length} />
       <input type="hidden" name="entries" value={JSON.stringify(entries)} />
 
-      <header
-        className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-        style={{ borderBottom: "1px solid var(--line-hairline)" }}
-      >
-        <div>
-          <h2 className="text-sm font-semibold">{label}</h2>
-          <p className="numeric mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-            out of {maxMarks}
-            {passMarks !== null && ` · pass mark ${passMarks}`}
-            {` · ${entered} of ${students.length} entered`}
-          </p>
+      <header style={{ borderBottom: "1px solid var(--line-on-white)" }}>
+        <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">{label}</h2>
+            <p className="numeric mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+              out of {maxMarks}
+              {passMarks !== null && ` · pass mark ${passMarks}`}
+              {` · ${entered} of ${students.length} entered`}
+            </p>
+          </div>
+          {alreadySubmitted ? (
+            <Status tone="good">submitted</Status>
+          ) : (
+            <Status tone="warn" dot>
+              not submitted
+            </Status>
+          )}
         </div>
-        {alreadySubmitted ? <Pill tone="good">Submitted</Pill> : <Pill tone="warn">Not submitted</Pill>}
+
+        <div
+          aria-hidden="true"
+          className="h-1 w-full"
+          style={{ background: "var(--surface-sunken)" }}
+        >
+          <div
+            className="h-full transition-all"
+            style={{
+              width: `${progress}%`,
+              background: entered === students.length ? "var(--state-good)" : "var(--accent)",
+            }}
+          />
+        </div>
       </header>
 
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-5">
         {state.ok && state.notice && <Banner tone="success">{state.notice}</Banner>}
         {state.error && <Banner tone="error">{state.error}</Banner>}
 
@@ -127,7 +148,7 @@ export function MarkSheet({
           </Banner>
         )}
 
-        <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+        <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
           {students.map((s) => {
             const isAbsent = Boolean(absent[s.student_id]);
             const value = marks[s.student_id] ?? "";
@@ -137,10 +158,14 @@ export function MarkSheet({
               !isAbsent && value !== "" && passMarks !== null && numeric < passMarks;
 
             return (
-              <li key={s.student_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+              <li key={s.student_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
                 <span
-                  className="numeric w-8 shrink-0 text-sm font-semibold"
-                  style={{ color: "var(--text-muted)" }}
+                  className="numeric grid h-8 w-8 shrink-0 place-items-center text-sm font-semibold"
+                  style={{
+                    borderRadius: "var(--radius-data)",
+                    background: "var(--surface-sunken)",
+                    color: "var(--text-secondary)",
+                  }}
                 >
                   {s.roll_no}
                 </span>
@@ -168,10 +193,11 @@ export function MarkSheet({
                     onChange={(e) =>
                       setMarks((m) => ({ ...m, [s.student_id]: e.target.value }))
                     }
-                    className="numeric w-20 rounded border px-2 py-1 text-right text-sm"
+                    className="numeric w-20 px-2.5 py-2 text-right text-sm font-medium"
                     style={{
-                      borderColor: over ? "var(--state-bad)" : "var(--line-hairline)",
-                      background: isAbsent ? "var(--surface-sunken)" : "var(--surface)",
+                      borderRadius: "var(--radius-control)",
+                      border: `1px solid ${over ? "var(--state-bad)" : "var(--line-strong)"}`,
+                      background: isAbsent ? "var(--surface-sunken)" : "var(--surface-raised)",
                     }}
                   />
 
@@ -197,9 +223,9 @@ export function MarkSheet({
                     Absent
                   </label>
 
-                  <span className="w-14 shrink-0 text-right">
-                    {isAbsent && <Pill tone="neutral">Abs</Pill>}
-                    {!isAbsent && failing && <Pill tone="bad">below pass</Pill>}
+                  <span className="w-24 shrink-0 text-right">
+                    {isAbsent && <Status tone="neutral">absent</Status>}
+                    {!isAbsent && failing && <Status tone="bad">below pass</Status>}
                   </span>
                 </span>
               </li>
@@ -219,24 +245,40 @@ export function MarkSheet({
               required
               maxLength={500}
               placeholder="For example: addition error on question 4"
-              className="w-full rounded-lg border px-3 py-2 text-sm"
-              style={{ borderColor: "var(--line-hairline)", background: "var(--surface)" }}
+              className="w-full px-3 py-2.5 text-sm"
+              style={{
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+              }}
             />
           </label>
         )}
-
-        {entryOpen && (
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <SubmitButton pendingLabel="Submitting…">
-              {alreadySubmitted ? "Save correction" : "Submit marks"}
-            </SubmitButton>
-            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Marks stay private until the school publishes the results. Nothing
-              here is visible to students.
-            </p>
-          </div>
-        )}
       </div>
+
+      {entryOpen && (
+        /* The submit stays in reach: a sheet of forty is taller than the
+           screen, and the teacher should not have to scroll to the end. */
+        <div
+          className="sticky bottom-0 flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4"
+          style={{
+            borderTop: "1px solid var(--line-on-white)",
+            background: "color-mix(in srgb, var(--surface-raised) 92%, transparent)",
+            backdropFilter: "saturate(180%) blur(8px)",
+          }}
+        >
+          <SubmitButton pendingLabel="Submitting…">
+            {alreadySubmitted ? "Save correction" : "Submit marks"}
+          </SubmitButton>
+          <p
+            className="w-full text-xs leading-relaxed sm:w-auto sm:min-w-0 sm:flex-1"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Marks stay private until the school publishes the results. Nothing
+            here is visible to students.
+          </p>
+        </div>
+      )}
     </form>
   );
 }

@@ -553,7 +553,82 @@ offender, states the saving, and migration 0038 fixed the shipped templates.
   interactive and must not wait for a batch.
 - No cost in money, only in segments: a rate belongs with a provider account.
 
-## Phase 8 — K40 bridge  — **PENDING: hardware not purchased**
+## Phase 8 — UI/UX redesign  — done
+
+The owner's instruction was to redesign the whole experience before touching
+hardware or live SMS, and to replace the white-and-green direction with a new
+one: primary `#790D16`, page `#F5EFE1`, white surfaces, purposeful extra colour
+in charts and meters, inspiration from Canva, and a clear left sidebar in all
+three portals. The visual direction is recorded in
+[design-system.md](design-system.md), which now opens by stating that it
+supersedes Phase 2's palette.
+
+**Built**
+- A new token system in `globals.css`: cream page, white cards, the maroon
+  ramp, five status colours with their tints, a six-colour chart series, and one
+  radius and spacing scale. Every pair clears WCAG AA; the measurements are in
+  the design system.
+- A left sidebar in all three portals, grouped by what the work is, with the
+  active page marked by a filled white panel. Below `lg` it becomes a drawer,
+  portalled to `<body>` and closed by any navigation.
+- Reusable primitives in `src/components/ui.tsx` — `PageHeader`, `Card`,
+  `DataTable`, `Status`, `EmptyState`, `FilterChips`, `FieldList`, `Skeleton`
+  and the button shapes — and a rewritten `form.tsx` whose fields carry their
+  own errors and whose submits report their own pending state.
+- 19 inline line icons, replacing nothing (there were none) and used in the
+  navigation, the buttons and the stat cards.
+- All three dashboards rebuilt on live data with explicit periods, plus a
+  "needs your attention" list on the authority dashboard drawn from real rows.
+- Every screen moved onto the primitives: 35 pages and the shared components.
+- A loading skeleton per portal, since every portal page is `force-dynamic` and
+  a navigation always waits on the server.
+- Search and a class filter on the student roster, a class filter on fees and
+  cards, and subject filters in the library — all as links, so a filtered view
+  is shareable and the page stays a Server Component.
+
+**Found and fixed during the audit**
+- **A mislabelled statistic.** The authority dashboard's "Classes with a
+  routine: 0 of 12" was counting sections with attendance activity this month,
+  not sections with a timetable — which is why it read 0 while Class 3 plainly
+  had one. It now counts `routine_periods`, and the per-class table says `set`
+  or `none` per section. Verified against the data: Class 8 — A really does have
+  no periods.
+- **A drawer clipped to 56 pixels.** The menu trigger sits in the frosted top
+  bar, and a `backdrop-filter` makes its element the containing block for a
+  `position: fixed` descendant, so the drawer opened as a sliver with the page
+  showing through. It is now portalled to `<body>`.
+- **White text that was not white.** `.on-accent` inverted the focus ring but
+  never set a text colour; the sign-in panel's body copy came out near-black on
+  maroon. The class now carries the colour, which is what its name implies.
+- **A zero-value ring drawing a dot.** A zero-length arc with a round cap still
+  paints a cap at twelve o'clock, which reads as "a little bit" rather than as
+  nothing.
+- **"Good day, School."** The dashboards greeted the first word of a full name,
+  which turns "School Principal" into "School". They greet the whole name now.
+- **A stale "not built yet" notice.** The student portal still said feedback,
+  the library and ID cards were coming in later phases, three phases after they
+  shipped.
+
+**Verified**
+- 329 offline tests, unchanged and passing: this phase changed presentation, not
+  rules.
+- `tsc`, ESLint and `next build` clean.
+- Walked the main tasks in a real browser as all three roles at 1440×960 and at
+  375×812: sign-in, the three dashboards, attendance with its roster, mark
+  entry, the student roster and its class filter, fees, exams and an exam's
+  detail, cards and printables, notifications, the library, results, documents,
+  and the mobile drawer. A student's result-sheet PDF still downloads and still
+  comes back scoped to that one student.
+
+**Deliberately not done**
+- The sign-in page does not show the school's name or logo. Nothing about the
+  school is readable before sign-in — `school_settings` is `select ... to
+  authenticated`, and the only public route to the name is `get_public_card`,
+  which answers for one issued card at a time. Printing it on the sign-in screen
+  means widening anonymous read access, which is the owner's decision, not a
+  thing to slip into a redesign.
+
+## Phase 9 — K40 bridge  — **PENDING: hardware not purchased**
 
 The owner has not bought the K40 terminal. Nothing in this phase is built, and
 the device integration is not claimed anywhere. The database side — devices,
@@ -578,7 +653,7 @@ migration 0007 and is untested against hardware.
 
 **Needs:** decision 8 and physical access to the device.
 
-## Phase 9 — Hardening and launch
+## Phase 10 — Hardening and launch
 
 - Role and security review against the full policy set.
 - Print checks on real paper and real PVC stock.

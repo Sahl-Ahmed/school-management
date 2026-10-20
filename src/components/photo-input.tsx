@@ -105,7 +105,7 @@ export function PhotoInput({
             src={status.previewUrl}
             alt="Preview of the selected student photo"
             className="h-28 w-24 shrink-0 rounded-lg border object-cover"
-            style={{ borderColor: "var(--line-hairline)" }}
+            style={{ borderColor: "var(--line-on-white)" }}
           />
         )}
 

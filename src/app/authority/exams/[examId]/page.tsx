@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+
 import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { AUTHORITY_NAV } from "../../nav";
 import { Banner } from "@/components/form";
-import { Pill, RingMeter, StatCard } from "@/components/charts";
+import {
+  Card,
+  CardHeader,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  PageSections,
+  Status,
+  Td,
+  Th,
+  Tr,
+} from "@/components/ui";
+import { RingMeter, StatCard } from "@/components/charts";
 import { EXAM_STATUS, type ExamStatus } from "../exam-status";
 import {
   ResultsPublisher,
@@ -155,27 +167,25 @@ export default async function ExamDetailPage({
       userName={profile?.full_name ?? "Authority"}
       nav={AUTHORITY_NAV}
     >
-      <div className="space-y-6">
-        <nav aria-label="Breadcrumb" className="text-xs">
-          <Link href={"/authority/exams" as never} className="underline" style={{ color: "var(--text-muted)" }}>
-            Exams
-          </Link>
-        </nav>
-
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">{exam.name}</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+      <PageSections>
+        <PageHeader
+          breadcrumb={{ label: "Exams", href: "/authority/exams" }}
+          title={exam.name}
+          meta={
+            <>
               {term?.name}
               {one<{ name: string }>(exam.academic_years)?.name &&
                 ` · ${one<{ name: string }>(exam.academic_years)!.name}`}
               {exam.starts_on && ` · from ${longDate(exam.starts_on)}`}
-            </p>
-          </div>
-          <Pill tone={EXAM_STATUS[status]?.tone ?? "neutral"}>
-            {EXAM_STATUS[status]?.label ?? exam.status}
-          </Pill>
-        </header>
+            </>
+          }
+          description={EXAM_STATUS[status]?.meaning}
+          actions={
+            <Status tone={EXAM_STATUS[status]?.tone ?? "neutral"} dot>
+              {EXAM_STATUS[status]?.label ?? exam.status}
+            </Status>
+          }
+        />
 
         {!term?.attendance_window_start && (
           <Banner tone="warning">
@@ -187,72 +197,51 @@ export default async function ExamDetailPage({
 
         {unassigned.length > 0 && (
           <Banner tone="warning">
-            {unassigned.length} class-subject{unassigned.length === 1 ? "" : "s"} have
-            no assigned teacher, so nobody can enter those marks. Assign a teacher
-            through the class routine first.
+            {unassigned.length} class-subject
+            {unassigned.length === 1 ? " has" : "s have"} no assigned teacher, so
+            nobody can enter those marks. Assign a teacher through the class
+            routine first.
           </Banner>
         )}
 
         {/* Real figures only: both of these are counts of rows that exist. */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            className="sm:col-span-2 p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <Card className="col-span-2">
             <RingMeter
               value={totalMarksIn}
               denominator={totalMarksDue}
               label="Marks entered"
               period={`${totalMarksIn} of ${totalMarksDue} student-subject marks`}
             />
-          </div>
+          </Card>
           <StatCard
             label="Subjects submitted"
             value={`${complete.length} / ${progressRows.length}`}
             detail="a section counts only when every student has a mark"
             tone={outstanding === 0 && progressRows.length > 0 ? "good" : "warn"}
+            icon="check"
           />
           <StatCard
             label="Subjects configured"
             value={subjectRows.length}
             detail={`across ${classCount} class${classCount === 1 ? "" : "es"}`}
             tone="neutral"
+            icon="exam"
           />
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section
-            className="space-y-5 p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card className="space-y-5">
             <StatusControl examId={exam.id} current={status} />
-            <hr style={{ borderColor: "var(--line-hairline)" }} />
+            <hr style={{ borderColor: "var(--line-on-white)" }} />
             <RoutinePublisher
               examId={exam.id}
               publishedAt={exam.routine_published_at}
               subjectCount={subjectRows.length}
             />
-          </section>
+          </Card>
 
-          <section
-            className="p-4"
-            style={{
-              borderRadius: "var(--radius-card)",
-              background: "var(--surface-raised)",
-              border: "1px solid var(--line-hairline)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
+          <Card>
             <ResultsPublisher
               examId={exam.id}
               publishedAt={exam.results_published_at}
@@ -267,51 +256,40 @@ export default async function ExamDetailPage({
                 everything else.
               </p>
             )}
-          </section>
+          </Card>
         </div>
 
         {/* Submission tracking: who has entered marks and who has not. */}
-        <section
-          className="overflow-hidden"
-          style={{
-            borderRadius: "var(--radius-card)",
-            background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">
-              Mark submission
-              <span className="ml-2 font-normal" style={{ color: "var(--text-muted)" }}>
-                outstanding first
-              </span>
-            </h2>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
-              &quot;Not submitted&quot; means the teacher has not finished. It is
-              not a claim about any student.
-            </p>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Mark submission"
+            hint={
+              <>
+                Outstanding first. &ldquo;Not submitted&rdquo; means the teacher
+                has not finished — it is not a claim about any student.
+              </>
+            }
+          />
 
           {progressRows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              No subjects are configured yet, so there is nothing to submit.
-            </p>
+            <EmptyState icon="exam" title="No subject is configured for this exam yet">
+              Add the classes and subjects below. Mark entry, submission tracking
+              and publishing all follow from that list.
+            </EmptyState>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">Mark entry progress by class, section and subject</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Class</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Subject</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Teacher</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Marks in</th>
-                    <th scope="col" className="px-4 py-2 text-right font-semibold">State</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...progressRows]
+            <DataTable
+              caption="Mark entry progress by class, section and subject"
+              head={
+                <>
+                  <Th>Class</Th>
+                  <Th>Subject</Th>
+                  <Th>Teacher</Th>
+                  <Th align="right">Marks in</Th>
+                  <Th align="right">State</Th>
+                </>
+              }
+            >
+              {[...progressRows]
                     .sort((a, b) => {
                       const aDone = a.submitted_at !== null ? 1 : 0;
                       const bDone = b.submitted_at !== null ? 1 : 0;
@@ -321,47 +299,52 @@ export default async function ExamDetailPage({
                         a.subject_name.localeCompare(b.subject_name)
                       );
                     })
-                    .map((r) => {
-                      const full = Number(r.marks_entered) >= Number(r.roster);
-                      const done = r.submitted_at !== null && full;
+                .map((r) => {
+                  const full = Number(r.marks_entered) >= Number(r.roster);
+                  const done = r.submitted_at !== null && full;
 
-                      return (
-                        <tr
-                          key={`${r.exam_subject_id}-${r.section_id}`}
-                          style={{ borderBottom: "1px solid var(--line-hairline)" }}
-                        >
-                          <td className="px-4 py-2">
-                            {r.class_name}
-                            {r.section_name && ` — ${r.section_name}`}
-                          </td>
-                          <td className="px-3 py-2">{r.subject_name}</td>
-                          <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>
-                            {r.teacher_name ?? (
-                              <span style={{ color: "var(--state-bad)" }}>none assigned</span>
-                            )}
-                          </td>
-                          <td className="numeric px-3 py-2 text-right">
-                            {Number(r.marks_entered)} / {Number(r.roster)}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {done ? (
-                              <Pill tone="good">Submitted</Pill>
-                            ) : r.submitted_at !== null ? (
-                              <Pill tone="warn">Submitted, incomplete</Pill>
-                            ) : Number(r.marks_entered) > 0 ? (
-                              <Pill tone="warn">In progress</Pill>
-                            ) : (
-                              <Pill tone="bad">Not submitted</Pill>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
+                  return (
+                    <Tr key={`${r.exam_subject_id}-${r.section_id}`}>
+                      <Td>
+                        {r.class_name}
+                        {r.section_name && ` — ${r.section_name}`}
+                      </Td>
+                      <Td>
+                        <span className="font-medium">{r.subject_name}</span>
+                      </Td>
+                      <Td>
+                        {r.teacher_name ? (
+                          <span style={{ color: "var(--text-secondary)" }}>
+                            {r.teacher_name}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--state-bad)" }}>none assigned</span>
+                        )}
+                      </Td>
+                      <Td numeric>
+                        {Number(r.marks_entered)} / {Number(r.roster)}
+                      </Td>
+                      <Td align="right">
+                        {done ? (
+                          <Status tone="good">submitted</Status>
+                        ) : r.submitted_at !== null ? (
+                          <Status tone="warn">submitted, incomplete</Status>
+                        ) : Number(r.marks_entered) > 0 ? (
+                          <Status tone="warn" dot>
+                            in progress
+                          </Status>
+                        ) : (
+                          <Status tone="bad" dot>
+                            not submitted
+                          </Status>
+                        )}
+                      </Td>
+                    </Tr>
+                  );
+                })}
+            </DataTable>
           )}
-        </section>
+        </Card>
 
         <SubjectAdder
           examId={exam.id}
@@ -370,62 +353,55 @@ export default async function ExamDetailPage({
           locked={locked}
         />
 
-        <section
-          className="overflow-hidden"
-          style={{
-            borderRadius: "var(--radius-card)",
-            background: "var(--surface-raised)",
-            border: "1px solid var(--line-hairline)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-            <h2 className="text-sm font-semibold">Subjects in this exam</h2>
-          </header>
+        <Card padded={false}>
+          <CardHeader
+            title="Subjects in this exam"
+            hint="One row per class and subject. Each carries its own maximum, and a pass mark that falls back to the grading scale when it is left blank."
+          />
 
           {subjectRows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-              None yet.
-            </p>
+            <EmptyState icon="exam" title="No subject has been added yet">
+              Add a class and its subjects above. Nothing can be marked or
+              published until at least one subject exists.
+            </EmptyState>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">Configured exam subjects</caption>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Class</th>
-                    <th scope="col" className="px-3 py-2 text-left font-semibold">Subject</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Out of</th>
-                    <th scope="col" className="px-3 py-2 text-right font-semibold">Pass mark</th>
-                    <th scope="col" className="px-4 py-2 text-left font-semibold">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjectRows.map((s) => (
-                    <tr key={s.id} style={{ borderBottom: "1px solid var(--line-hairline)" }}>
-                      <td className="px-4 py-2">{s.className}</td>
-                      <td className="px-3 py-2">{s.subjectName}</td>
-                      <td className="numeric px-3 py-2 text-right">{Number(s.max_marks)}</td>
-                      <td className="numeric px-3 py-2 text-right">
-                        {s.pass_marks === null ? (
-                          <span style={{ color: "var(--text-muted)" }}>
-                            {scale.data ? `${Number(scale.data.subject_pass_pct)}% of max` : "scale"}
-                          </span>
-                        ) : (
-                          Number(s.pass_marks)
-                        )}
-                      </td>
-                      <td className="px-4 py-2" style={{ color: "var(--text-secondary)" }}>
-                        {s.exam_date ?? "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              caption="Configured exam subjects"
+              head={
+                <>
+                  <Th>Class</Th>
+                  <Th>Subject</Th>
+                  <Th align="right">Out of</Th>
+                  <Th align="right">Pass mark</Th>
+                  <Th>Date</Th>
+                </>
+              }
+            >
+              {subjectRows.map((s) => (
+                <Tr key={s.id}>
+                  <Td>{s.className}</Td>
+                  <Td>
+                    <span className="font-medium">{s.subjectName}</span>
+                  </Td>
+                  <Td numeric>{Number(s.max_marks)}</Td>
+                  <Td numeric>
+                    {s.pass_marks === null ? (
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {scale.data ? `${Number(scale.data.subject_pass_pct)}% of max` : "scale"}
+                      </span>
+                    ) : (
+                      Number(s.pass_marks)
+                    )}
+                  </Td>
+                  <Td numeric align="left">
+                    {s.exam_date ?? "—"}
+                  </Td>
+                </Tr>
+              ))}
+            </DataTable>
           )}
-        </section>
-      </div>
+        </Card>
+      </PageSections>
     </PortalShell>
   );
 }

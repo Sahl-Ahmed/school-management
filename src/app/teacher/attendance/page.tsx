@@ -5,7 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { PortalShell } from "@/components/portal-shell";
 import { TEACHER_NAV } from "../nav";
 import { Banner } from "@/components/form";
-import { Pill } from "@/components/charts";
+import {
+  Card,
+  EmptyState,
+  NavButton,
+  PageHeader,
+  PageSections,
+  Status,
+} from "@/components/ui";
 import { AttendanceRoster, type RosterStudent } from "./roster";
 import { one } from "@/lib/supabase/relations";
 import {
@@ -84,6 +91,9 @@ export default async function TeacherAttendancePage({
 
   const isWeekend = (weekends ?? []).some((w) => w.weekday === weekday);
   const holiday = (holidays ?? [])[0];
+  const submittedCount = lessons.filter((l) =>
+    Boolean(submittedBy.get(l.id)?.submitted_at),
+  ).length;
 
   // Roster and any existing marks for the selected lesson.
   let roster: RosterStudent[] = [];
@@ -135,41 +145,62 @@ export default async function TeacherAttendancePage({
       userName={profile?.full_name ?? "Teacher"}
       nav={TEACHER_NAV}
     >
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight">Attendance</h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            {longDate(date)}
-          </p>
-        </header>
-
-        {/* Date stepper. Links rather than a picker so the choice is shareable
-            and the page stays a server component. */}
-        <nav aria-label="Change date" className="flex flex-wrap items-center gap-2 text-sm">
-          <Link
-            href={{ pathname: "/teacher/attendance", query: { date: addDays(date, -1) } }}
-            className="rounded-lg border px-3 py-1.5 font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
-          >
-            ← Previous day
-          </Link>
-          {date !== today && (
-            <Link
-              href={{ pathname: "/teacher/attendance", query: { date: today } }}
-              className="rounded-lg px-3 py-1.5 font-medium"
-              style={{ background: "var(--accent-soft)", color: "var(--green-900, var(--text-primary))" }}
+      <PageSections>
+        <PageHeader
+          title="Attendance"
+          meta={longDate(date)}
+          description={
+            lessons.length > 0
+              ? `${submittedCount} of ${lessons.length} lesson${lessons.length === 1 ? "" : "s"} submitted for this day.`
+              : undefined
+          }
+          actions={
+            /*
+             * The day stepper lives in the header, where a date control is
+             * expected, and is made of links rather than a picker so a day is
+             * shareable and the page stays a server component.
+             */
+            <nav
+              aria-label="Change date"
+              className="inline-flex overflow-hidden"
+              style={{
+                borderRadius: "var(--radius-control)",
+                border: "1px solid var(--line-strong)",
+                background: "var(--surface-raised)",
+              }}
             >
-              Today
-            </Link>
-          )}
-          <Link
-            href={{ pathname: "/teacher/attendance", query: { date: addDays(date, 1) } }}
-            className="rounded-lg border px-3 py-1.5 font-medium"
-            style={{ borderColor: "var(--line-hairline)" }}
-          >
-            Next day →
-          </Link>
-        </nav>
+              <Link
+                href={{ pathname: "/teacher/attendance", query: { date: addDays(date, -1) } }}
+                className="px-3 py-2.5 text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+                aria-label="Previous day"
+              >
+                ←
+              </Link>
+              <Link
+                href={{ pathname: "/teacher/attendance", query: { date: today } }}
+                aria-current={date === today ? "page" : undefined}
+                className="px-3 py-2.5 text-sm font-medium"
+                style={{
+                  borderLeft: "1px solid var(--line-on-white)",
+                  borderRight: "1px solid var(--line-on-white)",
+                  background: date === today ? "var(--accent)" : "transparent",
+                  color: date === today ? "var(--text-on-accent)" : "var(--text-secondary)",
+                }}
+              >
+                Today
+              </Link>
+              <Link
+                href={{ pathname: "/teacher/attendance", query: { date: addDays(date, 1) } }}
+                className="px-3 py-2.5 text-sm font-medium"
+                style={{ color: "var(--text-secondary)" }}
+                aria-label="Next day"
+              >
+                →
+              </Link>
+            </nav>
+          }
+        />
 
         {isWeekend && (
           <Banner tone="info">
@@ -180,51 +211,74 @@ export default async function TeacherAttendancePage({
 
         {holiday && (
           <Banner tone="info">
-            {date} is a school holiday ({holiday.name}). No attendance is due,
-            and none can be recorded.
+            {longDate(date)} is a school holiday ({holiday.name}). No attendance
+            is due, and none can be recorded.
           </Banner>
         )}
 
         {!isWeekend && !holiday && lessons.length === 0 && (
-          <Banner tone="info">
-            You have no periods scheduled on {WEEKDAY_NAMES[weekday]}.
-          </Banner>
+          <Card padded={false}>
+            <EmptyState
+              icon="calendar"
+              title={`No periods on your routine for ${WEEKDAY_NAMES[weekday]}`}
+              action={
+                <NavButton href="/teacher/routine" icon="calendar">
+                  See my whole week
+                </NavButton>
+              }
+            >
+              You are not scheduled to teach on this weekday, so there is no
+              attendance to take. Use the day stepper above to reach a teaching
+              day, or check your routine if this looks wrong.
+            </EmptyState>
+          </Card>
         )}
 
         {lessons.length > 0 && (
           <>
-            <nav aria-label="Choose a lesson" className="overflow-x-auto">
-              <ul className="flex gap-1 pb-1">
+            {/* The lesson chooser. A strip of cards rather than a dropdown: a
+                teacher needs to see at a glance which of today's lessons are
+                still owed, which a closed <select> hides. */}
+            <nav aria-label="Choose a lesson" className="scroll-soft -mx-1 overflow-x-auto px-1">
+              <ul className="flex gap-2 pb-1">
                 {lessons.map((l) => {
                   const active = l.id === selected?.id;
                   const session = submittedBy.get(l.id);
                   const done = Boolean(session?.submitted_at);
 
                   return (
-                    <li key={l.id}>
+                    <li key={l.id} className="shrink-0">
                       <Link
                         href={{
                           pathname: "/teacher/attendance",
                           query: { date, period: l.id },
                         }}
                         aria-current={active ? "page" : undefined}
-                        className="block whitespace-nowrap px-3 py-2 text-sm"
+                        className={`block min-w-[11rem] whitespace-nowrap px-4 py-3 text-sm transition-colors ${active ? "on-accent" : ""}`}
                         style={{
-                          borderRadius: "var(--radius-control)",
+                          borderRadius: "var(--radius-card)",
                           background: active ? "var(--accent)" : "var(--surface-raised)",
-                          color: active ? "var(--text-on-accent)" : "var(--text-secondary)",
-                          border: `1px solid ${active ? "var(--accent)" : "var(--line-hairline)"}`,
+                          color: active ? "var(--text-on-accent)" : "var(--text-primary)",
+                          border: `1px solid ${active ? "var(--accent)" : "var(--line-on-white)"}`,
+                          boxShadow: active ? "none" : "var(--shadow-card)",
                         }}
                       >
-                        <span className="block font-medium">{l.subject}</span>
-                        <span className="numeric block text-xs opacity-80">
-                          {l.label} · {hhmm(l.starts_at)}
+                        <span className="numeric block text-xs opacity-75">
+                          Period {l.period_no} · {hhmm(l.starts_at)}
                         </span>
-                        <span className="mt-1 block">
-                          {done ? (
-                            <Pill tone={active ? "neutral" : "good"}>Submitted</Pill>
+                        <span className="mt-0.5 block font-semibold">{l.subject}</span>
+                        <span className="block text-xs opacity-80">{l.label}</span>
+                        <span className="mt-2 block">
+                          {active ? (
+                            <span className="text-xs font-medium">
+                              {done ? "Submitted" : "Not submitted"}
+                            </span>
+                          ) : done ? (
+                            <Status tone="good">submitted</Status>
                           ) : (
-                            <Pill tone={active ? "neutral" : "warn"}>Not submitted</Pill>
+                            <Status tone="warn" dot>
+                              to do
+                            </Status>
                           )}
                         </span>
                       </Link>
@@ -246,7 +300,7 @@ export default async function TeacherAttendancePage({
             )}
           </>
         )}
-      </div>
+      </PageSections>
     </PortalShell>
   );
 }

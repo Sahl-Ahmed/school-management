@@ -75,7 +75,7 @@ export default async function PublicCardPage({
       <article
         className="w-full max-w-sm overflow-hidden rounded-2xl border shadow-sm"
         style={{
-          borderColor: "var(--line-hairline)",
+          borderColor: "var(--line-strong)",
           background: "var(--surface-raised)",
         }}
       >
@@ -133,7 +133,7 @@ export default async function PublicCardPage({
 
         <footer
           className="border-t px-5 py-4 text-xs"
-          style={{ borderColor: "var(--line-hairline)", color: "var(--text-muted)" }}
+          style={{ borderColor: "var(--line-strong)", color: "var(--text-muted)" }}
         >
           <p className="font-medium" style={{ color: "var(--text-primary)" }}>
             {school.name}

@@ -8,7 +8,7 @@ import {
 } from "./actions";
 import { sendClassTestResult, type MarksState } from "../marks/actions";
 import { Banner, Field, SelectField, SubmitButton } from "@/components/form";
-import { Pill } from "@/components/charts";
+import { Status } from "@/components/ui";
 
 const initial: ClassTestState = {};
 const initialSend: MarksState = {};
@@ -44,11 +44,11 @@ export function ClassTestCreator({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
-      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-hairline)" }}>
+      <header className="px-4 py-3" style={{ borderBottom: "1px solid var(--line-on-white)" }}>
         <h2 className="text-sm font-semibold">Create a class test</h2>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>
           Your own extra test. It is separate from the school&apos;s term exams
@@ -172,13 +172,13 @@ export function ClassTestSheet({
       style={{
         borderRadius: "var(--radius-card)",
         background: "var(--surface-raised)",
-        border: "1px solid var(--line-hairline)",
+        border: "1px solid var(--line-on-white)",
         boxShadow: "var(--shadow-card)",
       }}
     >
       <header
         className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-        style={{ borderBottom: "1px solid var(--line-hairline)" }}
+        style={{ borderBottom: "1px solid var(--line-on-white)" }}
       >
         <div>
           <h2 className="text-sm font-semibold">{label}</h2>
@@ -186,7 +186,7 @@ export function ClassTestSheet({
             out of {maxMarks} · {entries.length} of {students.length} entered
           </p>
         </div>
-        {sent ? <Pill tone="good">Result sent</Pill> : <Pill tone="warn">Not sent</Pill>}
+        {sent ? <Status tone="good">Result sent</Status> : <Status tone="warn">Not sent</Status>}
       </header>
 
       <form action={action} className="space-y-3 p-4">
@@ -209,7 +209,7 @@ export function ClassTestSheet({
           </Banner>
         )}
 
-        <ul className="divide-y" style={{ borderColor: "var(--line-hairline)" }}>
+        <ul className="divide-y" style={{ borderColor: "var(--line-on-white)" }}>
           {students.map((s) => {
             const isAbsent = Boolean(absent[s.student_id]);
             const value = marks[s.student_id] ?? "";
@@ -242,7 +242,7 @@ export function ClassTestSheet({
                   onChange={(e) => setMarks((m) => ({ ...m, [s.student_id]: e.target.value }))}
                   className="numeric w-20 shrink-0 rounded border px-2 py-1 text-right text-sm"
                   style={{
-                    borderColor: over ? "var(--state-bad)" : "var(--line-hairline)",
+                    borderColor: over ? "var(--state-bad)" : "var(--line-on-white)",
                     background: isAbsent ? "var(--surface-sunken)" : "var(--surface)",
                   }}
                 />
@@ -274,7 +274,7 @@ export function ClassTestSheet({
       </form>
 
       {/* Sending is its own form so saving marks cannot send by accident. */}
-      <div className="space-y-3 border-t p-4" style={{ borderColor: "var(--line-hairline)" }}>
+      <div className="space-y-3 border-t p-4" style={{ borderColor: "var(--line-on-white)" }}>
         <h3 className="text-sm font-semibold">Send the result to guardians</h3>
 
         {sendState.ok && sendState.notice && <Banner tone="success">{sendState.notice}</Banner>}
