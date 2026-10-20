@@ -27,6 +27,7 @@ next-env.d.ts
 # Test accounts on synthetic addresses, but still logins: not for the repo.
 SIGN-IN.local.md
 *.local.md
+.owner-demo-password
 
 # supabase local
 supabase/.temp/

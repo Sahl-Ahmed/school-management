@@ -99,16 +99,23 @@ number, address, and the head teacher's name, title and PNG signature.
 - **Both orientations** are built at PVC CR80 size — 54 x 85.6 mm portrait and
   85.6 x 54 mm landscape — and the office picks which template is the default.
 
-**Where the guardian's number appears, exactly.** It is printed on the card, so
-whoever finds a lost card can call the guardian directly. It is **not** shown on
-the public `/card/<token>` page: a finder holding the card can read the number
-off the plastic, whereas publishing it on the page would give it to anyone who
-scans the code without ever handling the card — a wider audience than the
-decision was about. If you would rather it appeared there as well, that is one
-field added to that page; say so and it is a small change.
+**Where the guardian's number appears, exactly — settled in phase 7.** You asked
+that the public QR page show the same student details the card prints, and that
+a printed contact number's visibility match that deliberate choice. It now does:
+the number is printed on the card AND shown on the page, so anyone who scans a
+found card can read it.
 
-What the public page does show: name, registration number, roll, class,
-section, blood group, session, and the school's own email and office number.
+Phase 6 had shipped these out of step — the card printed the number while the
+page looked for a differently-named field and silently dropped it. Both now read
+from one list (`src/lib/school/card-fields.ts`), with a test that a field the
+card prints cannot be missing from the page.
+
+What the public page shows: the school's name, logo, email and office number,
+plus the student's name (and Bangla name), registration number, roll, class,
+section, blood group, session and guardian phone — and nothing else. No
+photograph: the card prints one, but publishing a child's face to anyone who
+scans a found card is a different decision and you have not asked for it. Say
+the word either way.
 
 The database refuses parent names, NIDs, birth certificate numbers, fees, marks
 and attendance in a card snapshot regardless of what any template asks for, and
@@ -166,21 +173,41 @@ A note worth raising: in a section where only one or two students answer, an
 average can effectively identify the respondent. `feedback_analysis()` flags
 samples below a threshold for this reason.
 
-## 7. Daily SMS timing and corrections  *(brief 12.7)*
+## 7. Daily SMS timing and corrections  *(brief 12.7)*  — **open, but nothing is blocked**
 
-**Needed by:** phase 7.
+**You have decided not to open a provider account yet.** Live delivery is
+PENDING and is not claimed as working anywhere. Everything around it — the
+templates, the rules, the queue, the duplicate prevention and the delivery
+reporting — is built and tested in simulation, so connecting a provider later is
+a credentials change rather than a rewrite.
 
-**Current default:** `daily_sms_enabled = false`, 45-minute grace period after
-the last scheduled period, never before 16:00 Asia/Dhaka.
+**Already configurable, and currently set to:**
+- The daily summary is **off** (`daily_sms_enabled = false`).
+- A **45-minute** grace period after the last lesson ends.
+- Never before **16:00** Asia/Dhaka.
 
-**Still to confirm:**
-- Send time and grace period.
-- What happens when attendance is corrected after the summary has gone? The
-  system will not silently send a second ordinary daily SMS. The options are: no
-  notice, an explicit correction notice, or office discretion.
-- Who is notified about overdue teacher submissions, and after how long?
-- Approximate monthly SMS budget. Bangla text costs 70 characters per billable
-  segment against 160 for English, so message language materially changes cost.
+All three are columns in school settings, changeable without a code change.
+
+**Still to confirm, when you are ready:**
+- The send time and grace period in practice.
+- **What happens when attendance is corrected after a summary has gone.** The
+  system will not silently send a second ordinary daily SMS. The options remain:
+  no notice, an explicit correction notice, or office discretion. Nothing is
+  built for this yet, because the answer changes what gets built.
+- Who is notified about overdue teacher submissions, and after how long.
+- The approximate monthly budget.
+
+**One thing worth knowing before you choose a language.** Bangla cannot be sent
+as GSM-7, so a Bangla message is billed at 70 characters per segment against 160
+for English — the same sentence can cost three times as much. The template
+editor shows the segment count as you type.
+
+And a trap found in phase 7: **one character outside GSM-7 does the same thing
+to an English message.** The shipped English result template contained an em
+dash, which made a 96-character message cost two segments instead of one —
+double, for a piece of punctuation. The editor now names any such character and
+tells you the saving. If you write your own wording, watch for em dashes, en
+dashes and curly quotes.
 
 ## 8. K40 terminal and the on-site PC  *(brief 12.8)*
 

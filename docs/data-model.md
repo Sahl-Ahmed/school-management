@@ -43,6 +43,9 @@ comments.
 | `0033_documents_rpcs` | `exam_seat_tokens`, feedback target generation, admit-card issue and override, QR issue/revoke, the printable payloads, and the ID card / admit card / result sheet templates |
 | `0034_qr_token_comment_fix` | corrects what `issue_qr_token` says about the guardian phone |
 | `0035_feedback_campaign_choice` | picks the open feedback round, not the oldest, when a term has several |
+| `0036_library_cards_and_card_fields` | library card colour, audience range and `library_catalogue()`; corrects what the QR page publishes |
+| `0037_notification_templates_and_queue` | message templates, queueing, claim/settle, and delivery reporting |
+| `0038_template_gsm7_cost` | removes the em dash that doubled every English result SMS |
 
 ## Identity
 
@@ -259,6 +262,47 @@ the index would otherwise refuse the new row.
 `generated_documents` is the issue log: what was produced, for whom, by whom
 and when. It deliberately holds no file, because every PDF is generated on
 demand from live data or a frozen snapshot.
+
+## Library
+
+Cards follow the revised specification in
+[design-system.md](design-system.md) section 3. `subject_label` is the coloured
+area's top line; `class_id` and `class_to_id` give the audience as a range, which
+`library_catalogue()` renders as `Everyone`, `Class 5` or `Class 9-10`. A trigger
+refuses a range that runs backwards or an end with no start.
+
+`card_color` is the authority's choice, constrained to `#rrggbb`. The text colour
+is **not stored**: it is computed from the background at render time, so an
+unreadable card cannot be configured.
+
+`cover_image_path` and `cover_generated_at` are **cancelled**. The PDF-first-page
+thumbnail design they served was replaced; both carry comments saying so, and a
+test asserts nothing writes them.
+
+## Notifications
+
+```
+notification_templates   the wording, per type per language
+notification_jobs        one queued message, with dedupe_key UNIQUE
+sms_delivery_logs        one row per dispatch attempt
+```
+
+`notification_jobs.dedupe_key` is the idempotency guarantee and not a
+convenience index. The key is built as `<type>|<subject>|<scope>`, for example
+`daily_attendance|<student>|2026-05-04`, and the queueing functions INSERT and
+let the unique index refuse a duplicate rather than checking first — the gap
+between a check and an insert is exactly where a double send lives.
+
+A job carries structured facts in `payload`, not a rendered body. The
+application renders from the template and counts billable segments, because
+Bangla is UCS-2 at 70 characters per segment against 160 for Latin and that
+arithmetic has one implementation (`src/lib/sms/segments.ts`). SQL that
+re-counted it would be a second implementation to disagree with the first.
+
+`claim_notification_jobs` uses `for update skip locked`, so two dispatchers take
+different rows. A simulated dispatch settles as **skipped**, never **sent**, and
+`sent_at` stays NULL — which is what stops a rehearsal appearing in the office's
+delivery figures as traffic that never happened.
 
 ## Fees
 

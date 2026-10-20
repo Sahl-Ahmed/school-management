@@ -31,10 +31,11 @@ import {
  * the printed card and the public page cannot drift apart.
  *
  * The owner chose to print the guardian's phone number on the front, so a
- * finder can call them. The public /card/<token> page deliberately does not
- * render that field, which is why the page shows a subset of the snapshot
- * rather than all of it — see migration 0033 and
- * src/app/card/[token]/page.tsx.
+ * finder can call them — and settled in phase 7 that the public page shows the
+ * same student details the card prints, so that number is visible to anyone who
+ * scans the code as well. One deliberate choice about one field, made knowing
+ * both consequences. src/lib/school/card-fields.ts is the single list both this
+ * generator's template and the public page draw from.
  */
 
 export type IdCardFields = {

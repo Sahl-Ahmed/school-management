@@ -437,33 +437,129 @@ that is one field added in `src/app/card/[token]/page.tsx`.
 - Comments are not translated or sentiment-scored — they are shown as written.
 - The exam-fee charge is still created by an RPC with no screen of its own.
 
-## Phase 7 — Library and SMS
+## Phase 7 — Library and SMS  — library done, SMS simulated
 
-**Build**
-- Library CRUD and publish/unpublish, with book cards built to the REVISED
-  specification in [design-system.md](design-system.md#3-library-book-cards--revised-specification):
-  a coloured area showing subject on top and audience below, the full title
-  elsewhere on the card, an authority-chosen background colour with text
-  contrast computed from it, and a clear Open action for the PDF link.
-  **Cover generation from the PDF first page is cancelled — do not build it.**
-- `sms.bd` adapter behind the provider interface.
-- Daily attendance summary job: eligibility, body composition, segment
-  counting, dispatch, delivery-status reconciliation.
-- Authority views of pending, sent and failed messages.
+**The owner's decision, mid-phase:** the K40 fingerprint terminal has not been
+bought and no SMS provider account will be opened yet. Live SMS delivery and the
+K40 bridge are therefore **PENDING**, and neither is claimed as complete
+anywhere in this project. Everything around them was built and tested so that
+connecting a provider later is a credentials change rather than a rewrite.
 
-**Done when**
-- A long book title wraps to at most three lines and the card grid stays even.
-- Every authority-chosen card colour yields readable text automatically.
-- Exactly one daily job exists per student per school day.
-- No summary sends while a scheduled, non-cancelled period is unsubmitted.
-- Holidays and fully cancelled days produce no job.
-- Bangla segment counts are correct (70 characters, not 160).
-- Simulate and live modes are distinguishable in the logs.
+### Library — done
 
-**Needs:** decision 7 and real provider credentials. Until the account is
-confirmed, SMS stays simulated and must be reported as such.
+Built to the **revised card specification** in
+[design-system.md](design-system.md) section 3. The original brief's
+PDF-first-page thumbnail is cancelled and is not built; `cover_image_path` and
+`cover_generated_at` are retained but commented as cancelled, and a test asserts
+nothing writes them.
 
-## Phase 8 — K40 bridge
+- Authority management at `/authority/library`: add a book, pick its colour,
+  publish or unpublish, check link health, and switch between a card view and a
+  list.
+- A **live card preview** beside the form, so the office sees what a student
+  will see, including the computed text colour and a warning when a chosen
+  colour had to be nudged to stay readable.
+- Student browsing at `/student/library`, defaulting to **their own class** with
+  a one-click "show all classes", filtered by subject.
+- Teacher browsing at `/teacher/library`, the whole catalogue — material for a
+  class above or below is often what you need when preparing.
+
+**The card, exactly as specified**
+- A coloured area carrying the **subject** on top and the **audience** below:
+  `Biology` over `Class 9-10`, or `Everyone`.
+- The **full title outside the colour**, wrapping to at most three lines then
+  truncating, with the whole title kept as the accessible name and the tooltip.
+- **Contrast is computed, never chosen.** The authority picks a background;
+  `readableOn` picks black or white by relative luminance and nudges the
+  background when neither can reach WCAG AA on it. A sweep of the colour cube
+  finds 216 colours that fail against both black and white; a test asserts every
+  one of them ends up readable, and that all twelve curated presets clear AA.
+- A **labelled Open control**, not a mystery click target on the whole card,
+  opening the Drive link in a new tab with `rel="noopener"`. A link known to be
+  broken says **Unavailable** instead of opening a dead tab.
+
+**One deviation from the written spec, and why.** The spec says `class_id`
+carries the audience, but its own example is `Class 9-10`, which a single class
+cannot express. `class_to_id` was added so the audience is a range: neither set
+reads as `Everyone`, one set as `Class 5`, both as `Class 9-10`. The label is
+derived from real class rows rather than typed, so it cannot drift from the
+classes it names.
+
+### SMS — built and tested in simulation only
+
+**No provider is connected, and nothing in this system can reach a phone.**
+Every screen that could be misread says so, and a simulated dispatch settles its
+job as **skipped**, never **sent** — so the office's delivery figures can never
+describe messages that do not exist.
+
+What exists and is tested:
+- **Message templates** as configuration (`notification_templates`), one default
+  per type per language, in English and Bangla, editable at
+  `/authority/notifications` with a live preview and a live segment count.
+- **Rules** already configurable in school settings: whether the daily summary
+  runs at all, the grace period after the last lesson, and the earliest hour.
+- **The queue** (`notification_jobs`) for the daily attendance summary,
+  published results, class test results and account OTP.
+- **Duplicate prevention** by a UNIQUE `dedupe_key` — not a check-then-insert,
+  which has a gap, but a unique index that refuses the second row outright.
+  Re-running a day queues nothing and reports how many it skipped.
+- **A dispatcher** that claims work with `for update skip locked`, renders each
+  message, counts its billable segments and records the attempt.
+- **Delivery reporting**: the queue by type and status, per-message bodies and
+  segment counts, and the delivery log with failures, all for the office.
+
+**What it refuses to do**
+- Announce a result that is not published — the one thing this module must
+  never do.
+- Send a summary for a day no teacher submitted attendance for: "present 0/0"
+  reads as an absence when the truth is that nothing was recorded.
+- Queue for a student with no phone number, which could only ever fail.
+- Mark a simulated dispatch as delivered.
+
+**The em dash that was doubling the bill.** The notifications screen showed the
+English result template as "2 segments, 96 characters", which is wrong on its
+face — GSM-7 fits 160 characters per segment. The cause was one character: an
+em dash, which is not in the GSM 03.38 alphabet, and a single character outside
+that alphabet forces the **whole message** into UCS-2 where a segment is 70
+characters. Every result SMS the school ever sent would have cost twice what it
+needed to, for a piece of punctuation nobody would miss. The counter was always
+right; nobody was being told *which* character did it. It now names the
+offender, states the saving, and migration 0038 fixed the shipped templates.
+
+**Verified**
+- 323 offline tests in total, including every curated card colour reaching AA,
+  216 known-bad colours being rescued, the dedupe index refusing a re-run, and a
+  simulated dispatch never setting `sent_at`.
+- 15 tests against the hosted project: a teacher and a student cannot read a
+  draft book even by asking for unpublished rows; neither can read a
+  notification job, template or delivery log; an anonymous caller reaches none
+  of it; a backwards audience range is refused; and announcing an unpublished
+  result is refused.
+- Browser walkthrough: added and previewed a book, saw all four card cases
+  render with correct computed contrast, queued a day's summaries, re-ran it and
+  watched the dedupe refuse the duplicate, dispatched in simulation and read the
+  rendered bodies and segment counts, then browsed the catalogue as a student on
+  desktop and on a phone-width screen.
+
+**Known limitations, beyond the two pending integrations**
+- Link checking is manual, one button for the whole catalogue. Nothing checks on
+  a schedule.
+- A book is added and published but cannot be edited in place; the colour and
+  publication state can be changed, the rest needs removing and re-adding.
+- No scheduler. The office presses "queue" and "dispatch"; nothing runs on a
+  timer, because a timer that fires into a simulation would only create the
+  impression of a working system.
+- The OTP path still sends directly rather than through the queue, since it is
+  interactive and must not wait for a batch.
+- No cost in money, only in segments: a rate belongs with a provider account.
+
+## Phase 8 — K40 bridge  — **PENDING: hardware not purchased**
+
+The owner has not bought the K40 terminal. Nothing in this phase is built, and
+the device integration is not claimed anywhere. The database side — devices,
+device users, raw punches, shifts and derived daily attendance — exists from
+migration 0007 and is untested against hardware.
+
 
 **Build**
 - On-site sync service: autostart, device auth, incremental fetch, dedupe,

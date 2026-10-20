@@ -351,13 +351,61 @@ on conflict do nothing;
 -- --------------------------------------------------------------------------
 -- Library
 -- --------------------------------------------------------------------------
-insert into public.library_books (title, author, category, class_id, drive_url, is_published) values
-  ('Demo Bangla Reader', 'Demo Author', 'Textbook',
-   'c1000000-0000-4000-8000-000000000005',
+-- --------------------------------------------------------------------------
+-- Library
+-- ---------------------------------------------------------------------------
+-- Cards follow the REVISED specification in docs/design-system.md section 3:
+-- a coloured area carrying the subject and the audience, with the full title
+-- below it. The PDF-first-page thumbnail design is cancelled, so
+-- cover_image_path is deliberately left NULL here and everywhere.
+--
+-- `subject_label` is the big line; `class_id` and `class_to_id` give the
+-- audience, which renders as "Class 3", "Class 3-8" or "Everyone". The colour
+-- is the authority's choice; the text colour is computed from it and never
+-- stored. One long title is included on purpose, so the three-line wrap and
+-- the ellipsis are visible on a real card without anyone having to type one.
+-- --------------------------------------------------------------------------
+insert into public.library_books
+  (title, title_bn, author, subject_label, category, class_id, class_to_id,
+   card_color, drive_url, is_published)
+values
+  ('Demo Bangla Reader', 'ডেমো বাংলা পাঠ', 'Demo Author',
+   'Bangla', 'Textbook',
+   'c1000000-0000-4000-8000-000000000005', null,
+   '#1f6b45',
    'https://drive.google.com/file/d/DEMO_PLACEHOLDER_1/view', true),
-  ('Demo Mathematics Workbook', 'Demo Author', 'Workbook',
-   'c1000000-0000-4000-8000-000000000005',
+
+  ('Demo Mathematics Workbook', 'ডেমো গণিত অনুশীলন', 'Demo Author',
+   'Mathematics', 'Workbook',
+   'c1000000-0000-4000-8000-000000000005', null,
+   '#155e75',
    'https://drive.google.com/file/d/DEMO_PLACEHOLDER_2/view', true),
-  ('Demo School Handbook', 'School', 'Reference', null,
-   'https://drive.google.com/file/d/DEMO_PLACEHOLDER_3/view', true)
+
+  ('Demo School Handbook', null, 'School',
+   'Reference', 'Reference', null, null,
+   '#1f2937',
+   'https://drive.google.com/file/d/DEMO_PLACEHOLDER_3/view', true),
+
+  -- A deliberately long title, and an audience RANGE, so both behaviours are
+  -- visible in the demo catalogue rather than only in a test.
+  ('Essentials of Human Biology and Physiology for the Secondary Certificate, Volume II',
+   'মাধ্যমিক সার্টিফিকেটের জন্য মানব জীববিজ্ঞান ও শারীরবিদ্যার মূল বিষয়, দ্বিতীয় খণ্ড',
+   'Demo Author', 'Biology', 'Textbook',
+   'c1000000-0000-4000-8000-00000000000b',
+   'c1000000-0000-4000-8000-00000000000c',
+   '#d9f2e4',
+   'https://drive.google.com/file/d/DEMO_PLACEHOLDER_4/view', true)
 on conflict do nothing;
+
+-- The existing demo rows predate these columns, so bring them into line. The
+-- insert above cannot, because `on conflict do nothing` leaves a present row
+-- untouched.
+update public.library_books
+   set subject_label = coalesce(subject_label, 'Bangla'), card_color = coalesce(card_color, '#1f6b45')
+ where title = 'Demo Bangla Reader';
+update public.library_books
+   set subject_label = coalesce(subject_label, 'Mathematics'), card_color = coalesce(card_color, '#155e75')
+ where title = 'Demo Mathematics Workbook';
+update public.library_books
+   set subject_label = coalesce(subject_label, 'Reference'), card_color = coalesce(card_color, '#1f2937')
+ where title = 'Demo School Handbook';

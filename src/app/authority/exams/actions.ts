@@ -262,7 +262,9 @@ export async function publishResults(
     ok: true,
     notice:
       `${result.published} result${result.published === 1 ? "" : "s"} published ` +
-      `using the "${result.scale}" scale. ` +
-      `Result SMS is a development simulation and nothing has been sent to any phone.`,
+      `using the "${result.scale}" scale. Students can see their sheets now. ` +
+      `No SMS has been sent: queue the messages under Notifications, where you ` +
+      `can see what they would cost. SMS is a simulation until a provider is ` +
+      `connected, so nothing reaches a phone either way.`,
   };
 }

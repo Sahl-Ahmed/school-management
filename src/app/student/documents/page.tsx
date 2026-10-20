@@ -121,8 +121,10 @@ export default async function StudentDocumentsPage() {
               <>
                 <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                   Issued {prettyDate(card.issued_at.slice(0, 10))}. The QR on the
-                  back opens a page showing only what is printed on the card plus
-                  the school&apos;s contact details.
+                  back opens a page showing the same details printed on the card,
+                  plus the school&apos;s name and contact details — including the
+                  guardian phone number on the card front, which anyone who scans
+                  it can read. Nothing else about you is published there.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <a

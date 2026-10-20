@@ -350,6 +350,50 @@ The page then renders fewer fields still: the guardian's number is printed on
 the plastic, where a finder can read it, but is not published to anyone who
 merely scans the code.
 
+## Notifications, and why none of them send
+
+No SMS provider is connected, by the owner's decision, and nothing in this
+system can reach a phone. What exists is everything around that: the wording,
+the rules, the queue, the duplicate prevention and the reporting — so connecting
+a provider later is a credentials change rather than a rewrite.
+
+The dispatcher settles a simulated job as **skipped**, never **sent**, and
+leaves `sent_at` NULL. That is the one strictness worth stating: it would be
+easy, and wrong, to mark a simulated job sent so the screens look tidy, and the
+screens would then be claiming that four hundred guardians had been told their
+children's results.
+
+"Exactly one daily summary per student per school day" is an idempotency
+problem, not a scheduling one. A cron that overlaps itself, a manual retry and a
+second office click must each produce one message. `notification_jobs.dedupe_key`
+is UNIQUE and that index IS the guarantee: the queueing functions insert and let
+it refuse the duplicate, because a check-then-insert has a gap and the gap is
+exactly where a double send lives.
+
+Rendering is separated from queueing. A job carries structured facts; the
+application fills the template and counts billable segments, because that
+arithmetic has one implementation and SQL that re-counted it would be a second
+one to disagree with the first. A placeholder the payload cannot fill is left
+**visible** as `{status}` rather than blanked — "was {status} on 3 Nov" is
+obviously broken and gets caught in the preview, while "was  on 3 Nov" looks
+almost right and goes out to everyone.
+
+### The em dash that doubled the bill
+
+The notifications screen showed the English result template as "2 segments, 96
+characters", which is wrong on its face: GSM-7 fits 160 characters per segment.
+One character was the cause — an em dash, not in the GSM 03.38 alphabet — and a
+single character outside that alphabet forces the **whole message** into UCS-2,
+where a segment is 70 characters. Every result SMS would have cost twice what it
+needed to, for punctuation nobody would miss.
+
+The segment counter was never wrong. What was missing was anyone being told
+*which* character did it: a bare "2 segments" is not actionable. `countSegments`
+now returns `forcedBy`, the editor names the offender and states the saving, and
+it reports nothing for genuine Bangla — where UCS-2 is unavoidable and listing
+Bengali letters as "the problem" would send the office chasing text it cannot
+change.
+
 ## Two bugs worth remembering
 
 Both were found by testing against the deployed project, and both are the kind
